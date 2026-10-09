@@ -286,9 +286,9 @@ footer.end { border-top: 2px solid var(--ink); padding-top: 1.5rem; color: var(-
 <tr><td>Editor</td><td>Unity 2021.3.1f1</td><td><strong>Unity 6.3 LTS</strong> (version numbers are now <code>6000.3.x</code>)</td></tr>
 <tr><td>Rendering</td><td>Built-in pipeline</td><td><strong>URP</strong> by default. Built-in still exists but is on its way out</td></tr>
 <tr><td>Talking to the headset</td><td>SteamVR plugin + OpenVR (Big-Project); Oculus Integration (NewVRDumpling)</td><td><strong>OpenXR</strong>: one standard that Meta, Valve and others all implement</td></tr>
-<tr><td>Grabbing, poking, UI rays</td><td>BNG VR Interaction Framework (paid), SteamVR Interaction System</td><td><strong>XR Interaction Toolkit 3</strong> (free, Unity's own)</td></tr>
-<tr><td>Networking</td><td>Mirror 32 (Big-Project), Photon PUN 2 (NewVRDumpling)</td><td><strong>Netcode for GameObjects 2</strong> (Unity's own; you picked this)</td></tr>
-<tr><td>Internet play</td><td>Photon Cloud</td><td><strong>Unity Relay</strong> through the Multiplayer Services "Sessions" API</td></tr>
+<tr><td>Grabbing, poking, UI rays</td><td>SteamVR Interaction System</td><td><strong>XR Interaction Toolkit 3</strong> (free, Unity's own)</td></tr>
+<tr><td>Networking</td><td>Mirror 32</td><td><strong>Netcode for GameObjects 2</strong> (Unity's own; you picked this)</td></tr>
+<tr><td>Internet play</td><td>Not built</td><td><strong>Unity Relay</strong> through the Multiplayer Services "Sessions" API</td></tr>
 <tr><td>Input</td><td>Input System 1.3 (optional)</td><td>Input System 1.20 (the default; the old Input Manager is legacy)</td></tr>
 <tr><td>Testing multiplayer</td><td>Build, run two copies, alt-tab</td><td><strong>Multiplayer Play Mode</strong>: up to 4 players inside the editor</td></tr>
 <tr><td>Text</td><td>TextMesh Pro package</td><td>TextMesh Pro now ships inside the uGUI package</td></tr>
@@ -296,7 +296,7 @@ footer.end { border-top: 2px solid var(--ink); padding-top: 1.5rem; color: var(-
 
 <p>I went through both repos before writing this (the full write-up is in <span class="path">docs/01-repo-assessment.md</span>). Two findings matter here:</p>
 <ul>
-  <li>The asymmetric VR/PC play you remember was in <strong>NewVRDumpling</strong>, and it ran on a paid Asset Store template, Photon PUN 2 and the Oculus Integration. Big-Project had the better lobby code but never had a VR player.</li>
+  <li>Your 4-player local co-op VR/PC build isn't in either repo I could see. Big-Project has the lobby code but never had a VR player. Part 1 of this guide rebuilds that local co-op setup from scratch.</li>
   <li>Both depend on SDKs that have been replaced, so <strong>rebuilding is less work than upgrading</strong> (<span class="path">docs/02-upgrade-or-rebuild.md</span> has the reasoning). We keep the art and the ideas.</li>
 </ul>
 <div class="note review"><span class="tag">Review D1, D2</span><p>Rebuild rather than upgrade, on <strong>Unity 6.3 LTS + NGO 2.13</strong>. NGO 3.0 shipped in September 2026 but needs Unity 6.7, which is still in beta. When 6.7 becomes the LTS you can upgrade both; nothing in this guide's code depends on what changed.</p></div>
@@ -468,7 +468,7 @@ dotnet_naming_style.underscore_camel.required_prefix = _</code></pre>
 <tr><td>Files</td><td>One public class per file, file name = class name</td><td><span class="path">RoundManager.cs</span></td></tr>
 </tbody></table></div>
 <div class="note why"><span class="tag">Why · <code>[SerializeField] private</code> instead of <code>public</code></span><p>A public field lets <em>any</em> script change it at any time, and you lose track of who did. <code>[SerializeField] private</code> shows it in the Inspector but keeps code access closed. Expose read-only properties (<code>public float MoveSpeed =&gt; moveSpeed;</code>) when other code needs to read it. This is encapsulation, the first pillar of OOP, applied to Unity.</p></div>
-<div class="note thennow"><span class="tag">Then → now</span><p>The 2022 template's <code>OculusPlayer</code> had <code>public GameObject head;</code> and <code>public static OculusPlayer instance;</code>, both writable from anywhere. The new <code>ChefRigAnchors</code> (Chapter 15) does the same job with private fields and read-only properties.</p></div>
+<div class="note thennow"><span class="tag">Then → now</span><p>Big-Project's <code>VrWristUI</code> had <code>public GameObject wristUI;</code> and <code>public bool activeWristUI;</code>, both writable from anywhere. The new scripts keep fields private and expose read-only properties, like <code>ChefRigAnchors</code> in Chapter 15.</p></div>
 </section>
 
 <section class="chapter" id="ch4">
@@ -3665,8 +3665,7 @@ namespace DumplingKitchen.Chef
 {
     /// &lt;summary&gt;
     /// Sits on the XR Origin in the Kitchen scene and points at the tracked head and
-    /// hands, so the networked ChefAvatar can copy them. (Same idea as OculusPlayer in
-    /// the 2022 asymmetric template, minus the public fields.)
+    /// hands, so the networked ChefAvatar can copy them. Read-only from outside.
     ///
     /// On dumpling PCs (not the authority) the whole XR rig switches itself off.
     /// &lt;/summary&gt;
@@ -3713,9 +3712,6 @@ namespace DumplingKitchen.Net
     /// What the dumplings SEE of the chef: a head (with the ChefHat on it) and two hands.
     /// On the host it copies the real tracked XR rig every frame; NetworkTransforms on
     /// the head and hands (Authority Mode = Server) send that to every dumpling.
-    ///
-    /// The 2022 template did this with one SendTransform script and a switch on an int
-    /// index. Here the avatar owns its three parts, so there is nothing to mis-number.
     /// &lt;/summary&gt;
     public sealed class ChefAvatar : NetworkBehaviour
     {
@@ -3770,7 +3766,7 @@ namespace DumplingKitchen.Net
   <li>On the XR Origin in Kitchen, add <code>ChefRigAnchors</code> and assign the Main Camera and the two controller transforms.</li>
   <li>Add the prefab to the Network Prefabs List.</li>
 </ol>
-<div class="note thennow"><span class="tag">Then → now</span><p>This is the 2022 asymmetric template's idea (<code>OculusPlayer</code> + <code>SendTransform</code> copying head and hands onto networked objects) done with clearer ownership: one avatar owns its three parts, and the anchors are read-only.</p></div>
+<div class="note why"><span class="tag">Why · one avatar owns its parts</span><p>The avatar owns its head, hat and hands, and reads the real rig through read-only anchors. Nothing else can move the avatar, and there are no index numbers to keep in sync.</p></div>
 
 <h3>The dumplings</h3>
 <figure class="code"><figcaption><span class="file"><span class="dir">Scripts/Net/</span>NetworkDumpling.cs<span class="dir"> · Part 2 version</span></span><button type="button" class="copy">Copy</button></figcaption><pre><code class="language-csharp">using DumplingKitchen.Dumplings;

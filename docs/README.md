@@ -4,8 +4,8 @@ Notes on the 2022 VR dumpling project and a plan for rebuilding it in current Un
 
 ## The short answer
 
-- **Which repo had asymmetric VR/PC working?** **NewVRDumpling** (July 2022), using a paid Oculus asymmetric template, Photon PUN 2 and the Oculus Integration. **Big-Project** (this repo) had the better structured lobby code (Mirror) but never had a VR player, and its lobby is currently broken by a scene rename.
-- **Upgrade to the latest Unity, or start again?** **Start again** in Unity 6.3 LTS and bring the art across. The VR SDKs (SteamVR plugin, Oculus Integration) and networking libraries (Mirror 32, PUN 2) both repos are built on have been replaced by OpenXR and Netcode for GameObjects. Upgrading means deleting those parts and rebuilding them anyway.
+- **Which repo had asymmetric VR/PC working?** Neither of these two has your version. Your 4-player local co-op VR/PC build (made without a template) must be in another repo. **Big-Project** (this repo) has structured lobby code (Mirror) but no VR player, and its lobby is currently broken by a scene rename. **NewVRDumpling** has Lara's later networked experiments, which aren't carried forward.
+- **Upgrade to the latest Unity, or start again?** **Start again** in Unity 6.3 LTS and bring the art across. The VR SDKs (SteamVR plugin, Oculus Integration) and networking library (Mirror 32) the old code is built on have been replaced by OpenXR and Netcode for GameObjects. Upgrading means deleting those parts and rebuilding them anyway.
 - **The tutorial**: [`tutorial/dumpling-kitchen-tutorial.html`](tutorial/dumpling-kitchen-tutorial.html). Open it in a browser. It builds the chef-vs-dumplings game from an empty project: Part 1 as a local couch game (Quest 2 + split-screen on one PC), Part 2 networked with Netcode for GameObjects.
 
 ## Files

@@ -5,8 +5,7 @@ namespace DumplingKitchen.Chef
 {
     /// <summary>
     /// Sits on the XR Origin in the Kitchen scene and points at the tracked head and
-    /// hands, so the networked ChefAvatar can copy them. (Same idea as OculusPlayer in
-    /// the 2022 asymmetric template, minus the public fields.)
+    /// hands, so the networked ChefAvatar can copy them. Read-only from outside.
     ///
     /// On dumpling PCs (not the authority) the whole XR rig switches itself off.
     /// </summary>

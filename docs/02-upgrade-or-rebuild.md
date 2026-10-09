@@ -10,9 +10,9 @@ The new tutorial (`docs/tutorial/dumpling-kitchen-tutorial.html`) rebuilds the g
 |---|---|---|---|
 | Unity editor | 2021.3.1f1 | **Unity 6.3 LTS** (6000.3.x; patches still shipping). Unity 6.7 (next LTS) is in beta | unity.com release pages |
 | VR runtime layer | SteamVR plugin + OpenVR XR plugin, Oculus Integration | **OpenXR plugin 1.18** (`com.unity.xr.openxr`) | Unity package registry |
-| VR interaction | BNG VRIF (paid), SteamVR Interaction System | **XR Interaction Toolkit 3.6** | Unity package registry |
-| Networking | Mirror 32, Photon PUN 2 | **Netcode for GameObjects 2.13** (3.x needs Unity 6.7) | Unity package registry |
-| Internet play | Photon Cloud | **Unity Relay via the Multiplayer Services package 2.4 (Sessions API)** | Unity package registry |
+| VR interaction | SteamVR Interaction System | **XR Interaction Toolkit 3.6** | Unity package registry |
+| Networking | Mirror 32 | **Netcode for GameObjects 2.13** (3.x needs Unity 6.7) | Unity package registry |
+| Internet play | Not built | **Unity Relay via the Multiplayer Services package 2.4 (Sessions API)** | Unity package registry |
 | Input | Input System 1.3 | Input System 1.20 (now the default) | Unity package registry |
 | Rendering | Built-in pipeline | **URP** (the default for new projects) | |
 
@@ -23,7 +23,7 @@ The new tutorial (`docs/tutorial/dumpling-kitchen-tutorial.html`) rebuilds the g
 Both repos talk to headsets through SDKs that have been replaced:
 
 - **SteamVR Unity Plugin / OpenVR**: Valve's OpenVR XR plugin was a stop-gap that has barely changed in years, and SteamVR's own recommended path for new projects is OpenXR. Every `SteamVR_*` component, the SteamVR Input action JSON in `StreamingAssets/SteamVR`, and the `SteamVR_SteamVR_dumpling` bindings folder would need removing.
-- **Oculus Integration** (NewVRDumpling): Meta deprecated this monolithic package in 2023 and split it into the Meta XR SDKs. Code that calls `OVRPlugin`, `OVRCameraRig` and `OVRGrabbable` (all of the asymmetric template) no longer exists in that form.
+- **Oculus Integration** (NewVRDumpling): Meta deprecated this monolithic package in 2023 and split it into the Meta XR SDKs. Code that calls `OVRPlugin`, `OVRCameraRig` and `OVRGrabbable` no longer exists in that form.
 - **OpenXR** is now the single standard. One build runs on a Quest 2 through **Meta Horizon Link / Air Link** and on SteamVR, which is exactly the setup you want. The tutorial shows how to switch between the two.
 
 So "upgrading" the VR side really means **deleting it and rebuilding it on OpenXR + XR Interaction Toolkit**. That's the same work as starting fresh, plus clean-up.
@@ -31,12 +31,11 @@ So "upgrading" the VR side really means **deleting it and rebuilding it on OpenX
 ### 2. The networking code needs rewriting either way
 
 - Big-Project's Mirror 32 code uses APIs that modern Mirror removed or changed (`ClientScene.RegisterPrefab`, `OnClientConnect(NetworkConnection)`, `hasAuthority` → `isOwned`, `NetworkConnection` → `NetworkConnectionToClient`). The lobby is also already broken by a scene rename (see `01-repo-assessment.md`).
-- NewVRDumpling's Photon PUN 2 is in maintenance mode; Photon's current products are Fusion and Quantum, which are different APIs.
-- You chose **Netcode for GameObjects** for the new version. Mirror → NGO or PUN → NGO is a rewrite, not an upgrade.
+- You chose **Netcode for GameObjects** for the new version. Mirror → NGO is a rewrite, not an upgrade.
 
 ### 3. There isn't much of our own code to save
 
-Big-Project has about 13 scripts of our own, most of them from following a lobby tutorial. NewVRDumpling's working parts were a bought template. Neither has gameplay (cooking, sabotage, rounds). The tutorial's code is written to be better structured than either, so you'd be replacing it anyway.
+Big-Project has about 13 scripts of our own, most of them from following a lobby tutorial. Neither repo has gameplay (cooking, sabotage, rounds). The tutorial's code is written to be better structured than either, so you'd be replacing it anyway.
 
 ### 4. Unity 2021 → 6 has its own friction
 
@@ -45,18 +44,13 @@ Even with no VR or networking, a 2021.3 project opening in Unity 6 hits:
 - Built-in render pipeline materials. URP is the default now, so materials need converting (Window > Rendering > Render Pipeline Converter).
 - API renames: `Rigidbody.velocity` → `linearVelocity`, `drag` → `linearDamping`, `PhysicMaterial` → `PhysicsMaterial`, `FindObjectOfType` → `FindFirstObjectByType`/`FindAnyObjectByType`.
 - TextMesh Pro is now inside the uGUI package, so the old `Assets/TextMesh Pro` folder and the `com.unity.textmeshpro` package reference need sorting out.
-- Huge vendored folders (SteamVR 97 MB, Mirror 13 MB, Oculus 700 MB, BNG 231 MB) to delete or re-import.
-
-### 5. Legal and security clean-up
-
-NewVRDumpling has paid Asset Store code and a Photon App ID in a public repo. A fresh project starts clean.
+- Huge vendored folders (SteamVR 97 MB, Mirror 13 MB, Oculus 700 MB) to delete or re-import.
 
 ## Effort comparison (rough)
 
 | Path | What you'd do | Rough effort for a returning dev |
 |---|---|---|
 | Upgrade Big-Project in place | Open in Unity 6, fix compile errors, delete SteamVR, fix scene names, upgrade Mirror, convert materials, then **add VR from nothing**, then build gameplay | 2–4 weekends before you're back to "where it was", with no VR player yet |
-| Upgrade NewVRDumpling in place | Same, plus rip out Oculus Integration, BNG and the template (the parts that made asymmetric play work) and replace Photon | Worse than above: the working parts are the parts that have to go |
 | **Fresh Unity 6.3 project (recommended)** | Follow the tutorial; import the old FBX art on day one | First playable local round in about a weekend; networked a weekend or two later |
 
 ## If you still want to try opening the old project in Unity 6

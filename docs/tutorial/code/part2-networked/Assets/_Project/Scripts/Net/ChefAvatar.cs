@@ -8,9 +8,6 @@ namespace DumplingKitchen.Net
     /// What the dumplings SEE of the chef: a head (with the ChefHat on it) and two hands.
     /// On the host it copies the real tracked XR rig every frame; NetworkTransforms on
     /// the head and hands (Authority Mode = Server) send that to every dumpling.
-    ///
-    /// The 2022 template did this with one SendTransform script and a switch on an int
-    /// index. Here the avatar owns its three parts, so there is nothing to mis-number.
     /// </summary>
     public sealed class ChefAvatar : NetworkBehaviour
     {

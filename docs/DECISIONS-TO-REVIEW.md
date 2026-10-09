@@ -11,7 +11,7 @@ Your answers to my three opening questions are treated as fixed: **local couch f
 | D1 | **Rebuild in a new project** instead of upgrading either old repo | The VR SDKs and networking libraries both repos depend on have been replaced; little of our own code is worth keeping. See `02-upgrade-or-rebuild.md` | The "If you still want to try" section of that doc shows the upgrade path |
 | D2 | **Unity 6.3 LTS** with **Netcode for GameObjects 2.13.x** | 6.3 is the current LTS. NGO 3.x exists but requires Unity 6.7 (beta in Oct 2026) and now pulls in Netcode for Entities | When Unity 6.7 LTS ships, upgrade both. The only NGO 3 change that touches our code is `NetworkTime` moving namespace, and we never name that type |
 | D3 | **Universal 3D (URP)** template, not the VR template | You learn what each XR piece does by adding it yourself | Start from the VR template if you'd rather have everything pre-wired |
-| D4 | **OpenXR + XR Interaction Toolkit 3.6** only, no Meta XR SDK | One build works through Meta Horizon Link and SteamVR. You don't need Meta-only features for PC VR | Add *Unity OpenXR: Meta* or the Meta XR SDK later for passthrough, hand tracking extras or a Quest standalone build |
+| D4 | **OpenXR + XR Interaction Toolkit 3.6** only: no Meta XR SDK, no paid assets, no Photon | One build works through Meta Horizon Link and SteamVR. You don't need Meta-only features for PC VR | Add *Unity OpenXR: Meta* or the Meta XR SDK later for passthrough, hand tracking extras or a Quest standalone build |
 | D5 | Working title **"Dumpling Kitchen"**, root namespace `DumplingKitchen` | Needed a name for folders, namespaces and assemblies | Rename the namespace with your IDE's refactor tool and the `.asmdef` names together |
 | D6 | **One runtime assembly** (`DumplingKitchen.Runtime`) plus an EditMode test assembly | Enough to get faster compiles and testable code without assembly-reference juggling | Split into `Core`, `Gameplay`, `Net` assemblies once the project grows |
 
@@ -62,9 +62,7 @@ Your answers to my three opening questions are treated as fixed: **local couch f
 
 | # | Item |
 |---|---|
-| H1 | NewVRDumpling (public) contains **paid Asset Store packages** (BNG VRIF, Odin, Chili Games template). Consider making it private or removing them. I did not change that repo |
-| H2 | NewVRDumpling contains a **Photon App ID**. Delete or regenerate it in the Photon dashboard if the app still exists |
-| H3 | Ask the original artists before using their models in anything public |
+| H1 | Ask the original artists before using their models in anything public |
 
 ## How the tutorial code was checked
 

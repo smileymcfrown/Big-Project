@@ -140,7 +140,7 @@ sequenceDiagram
   <li>On the XR Origin in Kitchen, add <code>ChefRigAnchors</code> and assign the Main Camera and the two controller transforms.</li>
   <li>Add the prefab to the Network Prefabs List.</li>
 </ol>
-<div class="note thennow"><span class="tag">Then → now</span><p>This is the 2022 asymmetric template's idea (<code>OculusPlayer</code> + <code>SendTransform</code> copying head and hands onto networked objects) done with clearer ownership: one avatar owns its three parts, and the anchors are read-only.</p></div>
+<div class="note why"><span class="tag">Why · one avatar owns its parts</span><p>The avatar owns its head, hat and hands, and reads the real rig through read-only anchors. Nothing else can move the avatar, and there are no index numbers to keep in sync.</p></div>
 
 <h3>The dumplings</h3>
 <!--@code part2 Scripts/Net/NetworkDumpling.cs-->
