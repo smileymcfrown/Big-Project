@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dumpling Kitchen Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: the pass during service. A sticky rank/XP rail on top, one big "next ticket" you act on, the nine services laid out as a ticket rail, and side stations for rewards, bugs and the brain dump. */
+:root {
+  --bg: #eef3f0;           /* porcelain */
+  --surface: #ffffff;
+  --surface-2: #f6f9f7;
+  --ink: #17201d;          /* soy */
+  --muted: #59675f;
+  --line: #d2dcd7;
+  --accent: #1f7360;       /* celadon jade */
+  --accent-ink: #ffffff;
+  --accent-soft: #d9ece5;
+  --xp: #b37a12;           /* steamer bamboo gold */
+  --xp-soft: #f6ebd2;
+  --boss: #b23d28;         /* chili oil */
+  --boss-soft: #f7e0da;
+  --good: #2f7d3f;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --radius: 12px;
+  --shadow: 0 1px 0 rgba(23, 32, 29, 0.06), 0 6px 18px -10px rgba(23, 32, 29, 0.25);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412; --surface: #16201c; --surface-2: #1b2622; --ink: #e3ece8; --muted: #9fb1aa; --line: #2a3832;
+    --accent: #5fc0a3; --accent-ink: #0b1311; --accent-soft: #19322a; --xp: #e6b55a; --xp-soft: #33291a;
+    --boss: #f07b63; --boss-soft: #3a1e18; --good: #79c98a; --shadow: 0 1px 0 rgba(0,0,0,0.3), 0 8px 22px -12px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412; --surface: #16201c; --surface-2: #1b2622; --ink: #e3ece8; --muted: #9fb1aa; --line: #2a3832;
+  --accent: #5fc0a3; --accent-ink: #0b1311; --accent-soft: #19322a; --xp: #e6b55a; --xp-soft: #33291a;
+  --boss: #f07b63; --boss-soft: #3a1e18; --good: #79c98a; --shadow: 0 1px 0 rgba(0,0,0,0.3), 0 8px 22px -12px rgba(0,0,0,0.6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1rem; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); text-underline-offset: 0.18em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.wrap { max-width: 78rem; margin: 0 auto; padding-inline: 1rem; padding-block: 0 4rem; }
+
+/* ---------- HUD ---------- */
+.hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.hud-inner { max-width: 78rem; margin: 0 auto; padding: 0.7rem 1rem; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 1rem; align-items: center; }
+.rank { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.plate { width: 3rem; height: 3rem; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; flex: none; box-shadow: inset 0 0 0 3px var(--xp); }
+.rank-name { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.1; }
+.rank-sub { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.04em; }
+.xpbar { min-width: 0; }
+.xpbar .track { height: 0.8rem; border-radius: 999px; background: var(--xp-soft); overflow: hidden; border: 1px solid var(--line); }
+.xpbar .fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--xp), color-mix(in srgb, var(--xp) 70%, var(--boss))); border-radius: 999px; transition: width 600ms cubic-bezier(.2,.8,.2,1); }
+.xpbar .label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+.chip { font-family: var(--font-mono); font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); white-space: nowrap; }
+.chip.good { border-color: color-mix(in srgb, var(--good) 50%, var(--line)); color: var(--good); }
+.chip.warn { border-color: color-mix(in srgb, var(--boss) 50%, var(--line)); color: var(--boss); }
+.chip.quiet { color: var(--muted); }
+@media (max-width: 760px) {
+  .hud-inner { grid-template-columns: auto minmax(0, 1fr); gap: 0.6rem 0.8rem; }
+  .rank-sub { display: none; }
+  .rank-name { font-size: 1rem; }
+  .chips { grid-column: 1 / -1; justify-content: flex-start; }
+}
+
+/* ---------- headline ---------- */
+.intro { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 1rem; padding-block: 1.75rem 1.25rem; }
+.intro h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.02em; line-height: 1; margin: 0; }
+.intro h1 em { font-style: normal; color: var(--accent); }
+.intro p { margin: 0.4rem 0 0; color: var(--muted); max-width: 36rem; }
+.countdown { text-align: right; }
+@media (max-width: 640px) { .countdown { text-align: left; } }
+.countdown .big { font-family: var(--font-display); font-weight: 800; font-size: 2.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.countdown .small { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+
+/* ---------- grid ---------- */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 21rem; gap: 1.25rem; align-items: start; }
+.col { display: grid; gap: 1.25rem; min-width: 0; }
+@media (max-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.2rem; box-shadow: var(--shadow); min-width: 0; }
+.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; margin: 0 0 0.75rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.card h2 .aside { font-family: var(--font-mono); font-weight: 400; font-size: 0.72rem; color: var(--muted); }
+.eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- next ticket ---------- */
+.ticket-next { position: relative; background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius); padding: 1.25rem 1.4rem 1.3rem; box-shadow: var(--shadow); }
+.ticket-next::before { content: ""; position: absolute; left: 1.2rem; right: 1.2rem; top: -2px; border-top: 2px dashed var(--bg); }
+.ticket-next .what { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.35rem, 3vw, 1.9rem); line-height: 1.15; margin: 0.35rem 0 0.4rem; text-wrap: balance; }
+.ticket-next .where { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
+.ticket-next.boss { border-color: var(--boss); }
+.ticket-next.boss .eyebrow { color: var(--boss); }
+.actions { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 0.55rem 0.95rem; cursor: pointer; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-size: 1.05rem; padding: 0.7rem 1.2rem; }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.boss { background: var(--boss); border-color: var(--boss); color: #fff; }
+.btn.small { font-size: 0.82rem; padding: 0.3rem 0.65rem; font-weight: 600; }
+.btn.ghost { background: transparent; }
+.btn[disabled] { opacity: 0.5; cursor: default; }
+.parked-note { margin-top: 0.9rem; font-size: 0.85rem; color: var(--muted); }
+
+/* ---------- focus timer ---------- */
+.timer { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.1rem; align-items: center; }
+.dial { width: 7.5rem; height: 7.5rem; border-radius: 50%; display: grid; place-items: center; position: relative; background: conic-gradient(var(--accent) calc(var(--p, 0) * 1turn), var(--accent-soft) 0); }
+.dial::after { content: ""; position: absolute; inset: 0.55rem; border-radius: 50%; background: var(--surface); }
+.dial span { position: relative; z-index: 1; font-family: var(--font-mono); font-weight: 600; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.dial.break { background: conic-gradient(var(--xp) calc(var(--p, 0) * 1turn), var(--xp-soft) 0); }
+.timer .mode { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; }
+.timer .hint { color: var(--muted); font-size: 0.9rem; margin: 0.15rem 0 0.7rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 0.25rem 0.7rem; font-size: 0.8rem; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.today-time { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); margin-top: 0.6rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .timer { grid-template-columns: minmax(0, 1fr); justify-items: start; } }
+
+/* ---------- campaign rail ---------- */
+.rail { display: grid; grid-template-columns: repeat(9, minmax(7.5rem, 1fr)); gap: 0.6rem; overflow-x: auto; padding: 0.25rem 0.1rem 0.6rem; }
+.day { text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 0.6rem 0.65rem 0.65rem; cursor: pointer; display: grid; gap: 0.25rem; min-width: 0; position: relative; }
+.day .n { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); display: grid; line-height: 1.35; }
+.day .t { font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; line-height: 1.15; }
+.day .bar { height: 0.35rem; border-radius: 999px; background: var(--line); overflow: hidden; }
+.day .bar i { display: block; height: 100%; background: var(--accent); width: 0; }
+.day.selected { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); background: var(--surface); }
+.day.done { background: var(--accent-soft); border-color: transparent; }
+.day.done .bar i { background: var(--good); }
+.day.today::after { content: "TODAY"; position: absolute; top: -0.55rem; right: 0.5rem; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.08em; background: var(--ink); color: var(--bg); border-radius: 999px; padding: 0.05rem 0.4rem; }
+.day.late .n .d { color: var(--boss); }
+
+/* ---------- quests ---------- */
+.day-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; align-items: baseline; margin-bottom: 0.25rem; }
+.day-head h3 { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; margin: 0; }
+.day-head .meta { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.day-blurb { color: var(--muted); margin: 0 0 1rem; }
+.quest { border-top: 1px dashed var(--line); padding-top: 0.85rem; margin-top: 0.85rem; }
+.quest-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.3rem 1rem; align-items: baseline; }
+.quest-head h4 { margin: 0; font-size: 1rem; }
+.quest-head h4 .ch { font-family: var(--font-mono); color: var(--muted); font-weight: 400; margin-right: 0.35rem; }
+.quest-head .meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); display: flex; gap: 0.6rem; align-items: center; }
+.quest.complete .quest-head h4 { color: var(--good); }
+ul.steps { list-style: none; padding: 0; margin: 0.5rem 0 0; display: grid; gap: 0.15rem; }
+ul.steps li { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: start; gap: 0.35rem; padding: 0.3rem 0.4rem; border-radius: 8px; }
+ul.steps li:hover { background: var(--surface-2); }
+ul.steps input { width: 1.15rem; height: 1.15rem; margin: 0.15rem 0 0; accent-color: var(--accent); cursor: pointer; }
+ul.steps label { cursor: pointer; }
+ul.steps li.checked label { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+ul.steps li.parked label::after { content: "parked"; margin-left: 0.4rem; font-family: var(--font-mono); font-size: 0.65rem; color: var(--xp); border: 1px solid var(--xp); border-radius: 999px; padding: 0 0.35rem; vertical-align: 0.1em; }
+ul.steps li.is-next { background: var(--accent-soft); }
+ul.steps .xp { font-family: var(--font-mono); font-size: 0.7rem; color: var(--xp); white-space: nowrap; padding-top: 0.2rem; }
+ul.steps li.boss { border: 1px solid color-mix(in srgb, var(--boss) 45%, var(--line)); background: var(--boss-soft); margin-top: 0.35rem; }
+ul.steps li.boss label { font-weight: 700; }
+ul.steps li.boss .xp { color: var(--boss); }
+ul.steps li.boss input { accent-color: var(--boss); }
+
+/* ---------- side stations ---------- */
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: 0.6rem; }
+.badge { display: grid; justify-items: center; gap: 0.3rem; text-align: center; font-size: 0.72rem; line-height: 1.2; color: var(--muted); }
+.badge .medal { width: 2.8rem; height: 2.8rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 0.95rem; border: 2px dashed var(--line); color: var(--line); }
+.badge.got { color: var(--ink); }
+.badge.got .medal { border: 0; background: var(--xp); color: #1b1408; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.18); }
+.reward { display: grid; gap: 0.2rem; margin-bottom: 0.75rem; }
+.reward label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.reward.unlocked label { color: var(--good); }
+input[type="text"], input[type="date"], textarea { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 0.45rem 0.6rem; width: 100%; }
+textarea { min-height: 7rem; resize: vertical; }
+.counter { display: flex; align-items: center; gap: 0.8rem; }
+.counter .num { font-family: var(--font-display); font-weight: 800; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; min-width: 2.5ch; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+.weekdays { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.weekdays label { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.82rem; border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.5rem; cursor: pointer; }
+.field { display: grid; gap: 0.3rem; margin-bottom: 0.8rem; }
+.field > span { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+details.settings summary { cursor: pointer; font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; }
+details.settings[open] summary { margin-bottom: 0.75rem; }
+.tips { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+.tips li { margin-bottom: 0.35rem; }
+
+/* ---------- toasts + level up ---------- */
+.toasts { position: fixed; right: 1rem; bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem); display: grid; gap: 0.5rem; z-index: 50; max-width: calc(100vw - 2rem); }
+.toast { background: var(--ink); color: var(--bg); border-radius: 10px; padding: 0.6rem 0.9rem; font-weight: 700; box-shadow: var(--shadow); animation: pop 220ms ease-out; }
+.toast b { color: var(--xp); }
+@keyframes pop { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.levelup { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: color-mix(in srgb, var(--ink) 55%, transparent); padding: 1rem; }
+.levelup .box { background: var(--surface); border-radius: 18px; padding: 2rem 2.2rem; text-align: center; max-width: 26rem; box-shadow: var(--shadow); border: 3px solid var(--xp); }
+.levelup .box .eyebrow { color: var(--xp); }
+.levelup .box h2 { font-family: var(--font-display); font-weight: 800; font-size: 2.2rem; margin: 0.4rem 0 0.3rem; line-height: 1.05; }
+.levelup .box p { color: var(--muted); margin: 0 0 1.2rem; }
+canvas.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 70; width: 100%; height: 100%; }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } .xpbar .fill { transition: none; } }
+footer.foot { margin-top: 2rem; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<header class="hud" aria-label="Your rank">
+  <div class="hud-inner">
+    <div class="rank">
+      <div class="plate" id="lvl-num" aria-hidden="true">1</div>
+      <div>
+        <div class="rank-name" id="lvl-name">Kitchen Porter</div>
+        <div class="rank-sub" id="lvl-sub">Level 1 of 10</div>
+      </div>
+    </div>
+    <div class="xpbar">
+      <div class="track" role="progressbar" aria-label="XP to next rank" aria-valuemin="0" aria-valuemax="100" id="xp-track"><div class="fill" id="xp-fill"></div></div>
+      <div class="label"><span id="xp-total">0 XP</span><span id="xp-next">300 XP to Dishwasher</span></div>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chip-status">Setting up...</span>
+      <span class="chip quiet" id="chip-sync">This browser only</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="intro">
+    <div>
+      <div class="eyebrow">9 services · 5 hours each · 45 hours</div>
+      <h1>Dumpling Kitchen <em>Quest</em></h1>
+      <p>One ticket at a time. Tick a step, earn XP, climb the brigade from Kitchen Porter to Michelin Star. Every step links to the matching chapter of the build guide.</p>
+    </div>
+    <div class="countdown">
+      <div class="big" id="cd-days">–</div>
+      <div class="small" id="cd-label">until Grand Opening</div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="col">
+      <section class="ticket-next" id="next" aria-live="polite">
+        <div class="eyebrow" id="next-eyebrow">Next ticket</div>
+        <div class="what" id="next-what">Loading your kitchen...</div>
+        <div class="where" id="next-where"></div>
+        <div class="actions">
+          <button type="button" class="btn primary" id="next-done">Done</button>
+          <button type="button" class="btn" id="next-sprint">Start a focus sprint</button>
+          <a class="btn ghost" id="next-open" href="#" target="_blank" rel="noopener">Open chapter</a>
+          <button type="button" class="btn ghost small" id="next-skip">Park it for later</button>
+        </div>
+        <div class="parked-note" id="next-parked" hidden></div>
+      </section>
+
+      <section class="card" aria-labelledby="timer-title">
+        <h2 id="timer-title">Focus sprint <span class="aside">+20 XP per finished sprint</span></h2>
+        <div class="timer">
+          <div class="dial" id="dial"><span id="dial-time">25:00</span></div>
+          <div>
+            <div class="mode" id="timer-mode">Ready when you are</div>
+            <div class="hint" id="timer-hint">One ticket, one timer. Phone face down, everything else closed.</div>
+            <div class="actions">
+              <button type="button" class="btn primary" id="timer-start">Start</button>
+              <button type="button" class="btn" id="timer-stop" disabled>Stop</button>
+              <div class="seg" role="group" aria-label="Sprint length">
+                <button type="button" data-len="25" id="len-25">25 / 5</button>
+                <button type="button" data-len="45" id="len-45">45 / 10</button>
+              </div>
+            </div>
+            <div class="today-time" id="today-time">Today: 0 sprints · 0 min focused · goal 5 h</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="campaign-title">
+        <h2 id="campaign-title">The nine services <span class="aside" id="campaign-aside"></span></h2>
+        <div class="rail" id="rail"></div>
+      </section>
+
+      <section class="card" id="day-panel" aria-live="polite"></section>
+    </div>
+
+    <aside class="col">
+      <section class="card" aria-labelledby="badges-title">
+        <h2 id="badges-title">Achievements <span class="aside" id="badge-count">0 / 0</span></h2>
+        <div class="badges" id="badges"></div>
+      </section>
+
+      <section class="card" aria-labelledby="bugs-title">
+        <h2 id="bugs-title">Bugs squashed <span class="aside">+15 XP each</span></h2>
+        <div class="counter">
+          <div class="num" id="bug-num">0</div>
+          <button type="button" class="btn primary" id="bug-add">Squashed one</button>
+          <button type="button" class="btn small ghost" id="bug-undo" aria-label="Undo last bug">Undo</button>
+        </div>
+        <p class="small muted" style="margin:0.6rem 0 0">Fixed something that fought back? Log it. Debugging is real progress.</p>
+      </section>
+
+      <section class="card" aria-labelledby="rewards-title">
+        <h2 id="rewards-title">Real rewards</h2>
+        <p class="small muted" style="margin-top:0">Pick something you actually want. It unlocks when you beat that day's boss.</p>
+        <div class="reward" id="reward-3"><label for="rw-3">After Service 3: first dish served</label><input type="text" id="rw-3" maxlength="120"></div>
+        <div class="reward" id="reward-6"><label for="rw-6">After Service 6: local game done</label><input type="text" id="rw-6" maxlength="120"></div>
+        <div class="reward" id="reward-9"><label for="rw-9">After Service 9: Grand Opening</label><input type="text" id="rw-9" maxlength="120"></div>
+      </section>
+
+      <section class="card" aria-labelledby="dump-title">
+        <h2 id="dump-title">Brain dump</h2>
+        <p class="small muted" style="margin-top:0">Shiny idea or stray worry mid-sprint? Park it here and get back to the ticket.</p>
+        <label for="notes" class="eyebrow">Parked thoughts</label>
+        <textarea id="notes" placeholder="Dumplings that can hide in the steamer... check Air Link router channel... buy more soy sauce"></textarea>
+      </section>
+
+      <section class="card" aria-labelledby="stuck-title">
+        <h2 id="stuck-title">Stuck?</h2>
+        <ul class="tips">
+          <li><b>Shrink it.</b> Do only the first line of the step. Momentum beats motivation.</li>
+          <li><b>Ten-minute rule.</b> Stuck for 10 minutes? Log what you tried in the brain dump, then ask for help or park the step.</li>
+          <li><b>Park, don't quit.</b> "Park it for later" moves on without losing the step.</li>
+          <li><b>Behind schedule?</b> Hit "Replan from today". No penalty, there's even a badge for it.</li>
+        </ul>
+      </section>
+
+      <details class="card settings" id="settings">
+        <summary>Schedule settings</summary>
+        <label class="field"><span>Start date</span><input type="date" id="set-start"></label>
+        <div class="field"><span>Days you'll work (5 h each)</span><div class="weekdays" id="set-days"></div></div>
+        <p class="small muted" id="set-summary"></p>
+        <div class="actions">
+          <button type="button" class="btn small" id="replan">Replan from today</button>
+          <button type="button" class="btn small ghost" id="reset">Reset all progress</button>
+        </div>
+      </details>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    Progress is saved privately to your account when this page is opened on claude.ai (it syncs between your devices), and in this browser otherwise. Chapter links open the Dumpling Kitchen Build Guide.
+  </footer>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<div class="levelup" id="levelup" hidden role="dialog" aria-modal="true" aria-labelledby="lu-title">
+  <div class="box">
+    <div class="eyebrow">Promotion</div>
+    <h2 id="lu-title">Commis Chef</h2>
+    <p id="lu-text">You've been promoted.</p>
+    <button type="button" class="btn primary" id="lu-close">Back to the line</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ------------------------------------------------------------------
+  // Content: 9 services, each 5 hours. Steps mirror the build guide.
+  // ------------------------------------------------------------------
+  var GUIDE = location.protocol === "file:"
+    ? "dumpling-kitchen-tutorial.html"
+    : "https://claude.ai/artifact/K3B77TH2PHemDgxFRkTd8i";
+
+  var DAYS = [
+    { id: "d1", name: "Mise en place", blurb: "Tools installed, project created, VR proven on both runtimes. Boring on purpose: every later day stands on this.",
+      quests: [
+        { ch: 1, title: "What changed since 2022", hours: 0.25, steps: [
+          "Read the 'what changed' table",
+          "Skim docs/01-repo-assessment.md: keep the art, leave the rest" ] },
+        { ch: 2, title: "Install Unity, create the project", hours: 1, steps: [
+          "Install Unity Hub and sign in",
+          "Install Unity 6.3 LTS with Windows Build Support (IL2CPP)",
+          "Install your IDE and set it as the External Script Editor",
+          "Install Git and run git lfs install",
+          "Create the DumplingKitchen project (Universal 3D)",
+          "Set Enter Play Mode to 'Reload Scene only'" ] },
+        { ch: 3, title: "Git, folders, assemblies, code style", hours: 1.25, steps: [
+          "git init and add the Unity .gitignore",
+          "Type the .gitattributes (LFS + unityyamlmerge)",
+          "Create the Assets/_Project folder tree",
+          "Type DumplingKitchen.Runtime.asmdef",
+          "Type the EditMode tests .asmdef",
+          "Add the .editorconfig",
+          "First commit: 'Empty URP project'" ] },
+        { ch: 4, title: "VR: Quest 2 via Link and SteamVR", hours: 2.5, steps: [
+          "Install XR Plug-in Management and tick OpenXR",
+          "Install XR Interaction Toolkit + Starter Assets + Interaction Simulator samples",
+          "Add the interaction profiles, Single Pass Instanced, Fix All",
+          "Put Direct3D11 first in the graphics APIs",
+          "Route A: Meta Horizon Link set as OpenXR runtime, Air Link connected",
+          "Route B: SteamVR set as OpenXR runtime, Quest connected",
+          "Build the smoke-test scene: XR Origin, Interaction Manager, UI Event System, cube" ],
+          boss: "Grab the cube through Link AND through SteamVR" } ] },
+    { id: "d2", name: "Prep station", blurb: "Old art imported, architecture understood, and the round's heartbeat ticking.",
+      quests: [
+        { ch: 5, title: "Bring the old art home", hours: 1.25, steps: [
+          "Clone NewVRDumpling somewhere outside the project",
+          "Copy Kitchen Models + Dumpling.fbx without .meta files",
+          "Check scale against the 1.5 x 2 m kitchen module",
+          "Extract materials and switch them to URP Lit",
+          "Make the Prop_Wok prefab: Rigidbody, collider, XR Grab Interactable",
+          "Add the layers: Dumpling, Sabotage, ChefOnly, HiddenFromChef" ] },
+        { ch: 6, title: "Architecture: how the pieces talk", hours: 0.5, steps: [
+          "Read 'Five tools, five jobs'",
+          "Trace the dependency diagram: why does Core never use Game?",
+          "Read the lifecycle table: what goes in Awake vs Start?" ] },
+        { ch: 7, title: "The round: timer and state machine", hours: 3.25, steps: [
+          "Type GameConfig.cs and create the GameConfig asset",
+          "Type RoundTimer.cs",
+          "Type RoundTimerTests.cs and get the Test Runner green",
+          "Break Format() on purpose, watch it go red, fix it",
+          "Type GamePhase.cs and RoundManager.cs",
+          "Type RoundDisplay.cs",
+          "Lay out the Kitchen hierarchy with --- header --- objects",
+          "Build the DesktopHUD and WallClock canvases",
+          "Wire the service bell to RoundManager.StartRound" ],
+          boss: "Ring the bell: 3, 2, 1, then 5:00 counts down on both canvases" } ] },
+    { id: "d3", name: "Fire up the wok", blurb: "The chef's whole loop: heat, pots, ingredients, recipes, serving.",
+      quests: [
+        { ch: 8, title: "The chef: cooking", hours: 5, steps: [
+          "Type IHeatSource and Stove",
+          "Type ElectricAppliance and ElectricHob",
+          "Type CookingLogic and CookingLogicTests (green)",
+          "Type IngredientDefinition and Ingredient",
+          "Make raw/cooked/burnt materials and the Carrot and Onion assets",
+          "Make ingredient prefabs: Rigidbody (Continuous Dynamic), collider, grab, Ingredient",
+          "Type TriggerTracker",
+          "Type CookingVessel and HeatZone",
+          "Build the Stove + HeatZone and the wok's Contents trigger",
+          "Set the wok's grab Movement Type to Velocity Tracking",
+          "Type RecipeDefinition, ServingCounter and OrderTicketDisplay",
+          "Create 2 recipes, build the serving counter and the order ticket" ],
+          boss: "Cook carrot + onion in the wok and serve it: Dishes 1/3" } ] },
+    { id: "d4", name: "Dumplings, assemble", blurb: "Input, movement and camera for the PC players. By tonight a dumpling runs around your kitchen.",
+      quests: [
+        { ch: 9, title: "The dumplings: input, motor, camera", hours: 5, steps: [
+          "Create Dumpling.inputactions with Keyboard&Mouse and Gamepad schemes",
+          "Add Move, Look, Jump and Interact with both bindings",
+          "Add the Lobby map with the Join action",
+          "Type IDumplingInput and PlayerDumplingInput",
+          "Type DumplingMotor",
+          "Type CameraUtility and DumplingCamera",
+          "Type DumplingPlayer",
+          "Build the Dumpling prefab (the tree in chapter 9)",
+          "Configure PlayerInput (C# events, camera) and the 0-friction PhysicsMaterial",
+          "Remove the AudioListener from the dumpling camera",
+          "Tune moveSpeed and jumpVelocity until it feels fun" ],
+          boss: "Drive a dumpling round the kitchen with keyboard AND gamepad" } ] },
+    { id: "d5", name: "Kitchen chaos", blurb: "The OOP showcase. One base class, five sabotages, and a sixth you write yourself.",
+      quests: [
+        { ch: 10, title: "Sabotage: the OOP showcase", hours: 5, steps: [
+          "Type IDumplingInteractable and DumplingInteractor",
+          "Type InteractionPromptDisplay and wire the PromptCanvas",
+          "Type SabotageTarget (read the Template Method box twice)",
+          "Type GasValve, LightSwitch and PowerPlug",
+          "Type Knockable and ChefHat",
+          "Type ChefRestoreHandle, ChefVisionBlocker and SabotageAlertDisplay",
+          "Place the five targets in the kitchen (the table in step 5)",
+          "Blindfold quad and culling masks",
+          "Write LoudRadio without peeking at the solution" ],
+          boss: "A dumpling turns off the gas, the chef turns it back on" } ] },
+    { id: "d6", name: "Couch service", blurb: "Split-screen dumplings plus the headset on one PC. Halfway: tag the local game.",
+      quests: [
+        { ch: 11, title: "Couch play on one PC", hours: 3, steps: [
+          "Add the Player Input Manager with the settings from the table",
+          "Type LocalPlayerJoiner",
+          "Type DesktopViewSetup, add the lobby camera and 4 spawn points",
+          "Join a gamepad dumpling and a keyboard dumpling",
+          "Run the 7-point playtest checklist" ] },
+        { ch: 11, title: "Bug bash and tag", hours: 2, steps: [
+          "Fix the 3 most annoying things you found (log each as a squashed bug)",
+          "Commit and git tag v0.1-local" ],
+          boss: "Play a full 5-minute round with a real person on the dumpling side" } ] },
+    { id: "d7", name: "Wire the restaurant", blurb: "Netcode concepts, the three-scene setup, and connecting a chef to a dumpling.",
+      quests: [
+        { ch: 12, title: "Networking concepts", hours: 0.5, steps: [
+          "Read the Mirror to NGO table",
+          "Read the four rules and trace the sabotage sequence diagram" ] },
+        { ch: 13, title: "Packages, scenes, NetworkManager", hours: 1.5, steps: [
+          "git switch -c networked; install NGO 2.13, Multiplayer Play Mode, Services, Tools",
+          "Swap in the Part 2 asmdef; untick Initialize XR on Startup",
+          "Create the Bootstrap and Menu scenes; set the Build Profiles order",
+          "Type the Editor asmdef and PlayFromBootstrap",
+          "NetworkManager: Unity Transport, approval on, Network Prefabs List" ] },
+        { ch: 14, title: "Host as chef, join as dumpling", hours: 3, steps: [
+          "Type Authority and XRStartup",
+          "Type SessionConnector",
+          "Type ConnectionManager",
+          "Type ConnectionMenu and JoinCodeDisplay; build the Menu UI" ],
+          boss: "Host as Chef in the editor and have a virtual player connect" } ] },
+    { id: "d8", name: "Networked kitchen", blurb: "Avatars, spawning, and the five files that make the rules multiplayer.",
+      quests: [
+        { ch: 15, title: "Spawning chef and dumplings", hours: 2.5, steps: [
+          "Type ChefRigAnchors and ChefAvatar; build the avatar prefab",
+          "Move the hat onto the avatar's head",
+          "Type NetworkDumpling; make the Dumpling_Net prefab variant",
+          "Type KitchenSpawner; remove the Part 1 DumplingJoiner" ] },
+        { ch: 16, title: "Networking the game rules", hours: 2.5, steps: [
+          "Type the networked RoundManager, comparing it with Part 1",
+          "Type the networked SabotageTarget; check the 5 subclasses compile unchanged",
+          "Type the networked Ingredient, HeatZone and ServingCounter",
+          "Make _Net prop variants; add NetworkObjects in the scene" ],
+          boss: "A dumpling in another window turns off the gas and the chef sees it" } ] },
+    { id: "d9", name: "Grand opening", blurb: "Test under fake lag, play across two PCs, then open the doors online.",
+      quests: [
+        { ch: 17, title: "Test, then play online", hours: 3, steps: [
+          "Multiplayer Play Mode with 2 virtual players",
+          "Network Simulator at about 100 ms, then re-test everything",
+          "Windows build; LAN game across two PCs",
+          "Link a Unity Cloud project and enable Relay",
+          "Online game using the join code" ] },
+        { ch: 18, title: "Polish and plan", hours: 2, steps: [
+          "Bug bash: fix what lag revealed",
+          "Pick your first 'where next' feature and park it in the brain dump" ],
+          boss: "A full online round with friends" } ] }
+  ];
+
+  var RANKS = [
+    { xp: 0, name: "Kitchen Porter", line: "Everyone starts at the sink." },
+    { xp: 300, name: "Dishwasher", line: "Clean station, clean code." },
+    { xp: 800, name: "Prep Cook", line: "You know where everything lives." },
+    { xp: 1400, name: "Commis Chef", line: "Trusted with the knives now." },
+    { xp: 2000, name: "Line Cook", line: "Holding a station under pressure." },
+    { xp: 2700, name: "Chef de Partie", line: "You run your own station." },
+    { xp: 3400, name: "Sous Chef", line: "Second in command of the kitchen." },
+    { xp: 4200, name: "Head Chef", line: "The kitchen runs on your call." },
+    { xp: 5100, name: "Executive Chef", line: "You designed the whole menu." },
+    { xp: 6200, name: "Michelin Star", line: "The game is open. Take a bow." }
+  ];
+
+  var XP = { step: 10, boss: 250, quest: 50, day: 100, onTime: 50, sprint: 20, bug: 15 };
+
+  // Build step ids once: d1.q0.s3, d1.boss
+  DAYS.forEach(function (day, di) {
+    day.index = di;
+    day.steps = [];
+    day.quests.forEach(function (q, qi) {
+      q.stepIds = q.steps.map(function (text, si) {
+        var id = day.id + ".q" + qi + ".s" + si;
+        day.steps.push({ id: id, text: text, quest: q, boss: false });
+        return id;
+      });
+      if (q.boss) {
+        var bid = day.id + ".boss";
+        q.bossId = bid;
+        day.steps.push({ id: bid, text: q.boss, quest: q, boss: true });
+      }
+    });
+    day.hours = day.quests.reduce(function (sum, q) { return sum + q.hours; }, 0);
+  });
+  var ALL_STEPS = [];
+  DAYS.forEach(function (d) { d.steps.forEach(function (s) { s.day = d; ALL_STEPS.push(s); }); });
+  var STEP_BY_ID = {};
+  ALL_STEPS.forEach(function (s) { STEP_BY_ID[s.id] = s; });
+
+  // ------------------------------------------------------------------
+  // Dates
+  // ------------------------------------------------------------------
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function today() { return iso(new Date()); }
+  function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return iso(d); }
+  function daysBetween(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
+  var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function pretty(s) { var d = parse(s); return DOW[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()]; }
+
+  // n-th (0-based) working day on or after start
+  function nthWorkday(start, n, workdays) {
+    if (!workdays.length) workdays = [1, 2, 3, 4, 5];
+    var d = start, count = -1, guard = 0;
+    while (guard++ < 400) {
+      if (workdays.indexOf(parse(d).getDay()) !== -1) { count++; if (count === n) return d; }
+      d = addDays(d, 1);
+    }
+    return d;
+  }
+
+  // ------------------------------------------------------------------
+  // State
+  // ------------------------------------------------------------------
+  var LOCAL_KEY = "dumpling-kitchen-quest-v1";
+
+  function defaultState() {
+    return {
+      v: 1, updatedAt: 0,
+      startDate: today(), workdays: [1, 2, 3, 4, 5],
+      anchor: null,           // { day: index, date: iso } after a replan
+      replans: 0,
+      done: {},               // stepId -> iso date ticked
+      parked: {},             // stepId -> true
+      dayDone: {},            // dayId -> iso date completed
+      sprints: {},            // iso date -> count
+      minutes: {},            // iso date -> focused minutes
+      bugs: 0,
+      sprintLen: 25,
+      rewards: { d3: "Order in dumplings (obviously)", d6: "A night off: film, no laptop", d9: "That thing you've wanted for ages" },
+      notes: ""
+    };
+  }
+
+  function normalize(s) {
+    var base = defaultState();
+    s = s && typeof s === "object" ? s : {};
+    Object.keys(base).forEach(function (k) { if (s[k] === undefined || s[k] === null && k !== "anchor") s[k] = base[k]; });
+    if (!Array.isArray(s.workdays)) s.workdays = base.workdays;
+    return s;
+  }
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function loadLocal() {
+    try { var raw = localStorage.getItem(LOCAL_KEY); return raw ? normalize(JSON.parse(raw)) : null; } catch (e) { return null; }
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
+  }
+
+  var state = loadLocal() || defaultState();
+
+  // ------------------------------------------------------------------
+  // Derived numbers (XP is always computed, never stored, so devices can't drift)
+  // ------------------------------------------------------------------
+  function isDone(id) { return !!state.done[id]; }
+  function questComplete(q) {
+    return q.stepIds.every(isDone) && (!q.bossId || isDone(q.bossId));
+  }
+  function dayComplete(day) { return day.steps.every(function (s) { return isDone(s.id); }); }
+  function dayProgress(day) {
+    var n = day.steps.filter(function (s) { return isDone(s.id); }).length;
+    return n / day.steps.length;
+  }
+  function plannedDate(i) {
+    var a = state.anchor;
+    if (a && i >= a.day) return nthWorkday(a.date, i - a.day, state.workdays);
+    return nthWorkday(state.startDate, i, state.workdays);
+  }
+  function onTime(day) { var d = state.dayDone[day.id]; return !!d && d <= plannedDate(day.index); }
+  function sumValues(o) { return Object.keys(o).reduce(function (t, k) { return t + (+o[k] || 0); }, 0); }
+
+  function computeXp() {
+    var xp = 0;
+    ALL_STEPS.forEach(function (s) { if (isDone(s.id)) xp += s.boss ? XP.boss : XP.step; });
+    DAYS.forEach(function (d) {
+      d.quests.forEach(function (q) { if (questComplete(q)) xp += XP.quest; });
+      if (dayComplete(d)) { xp += XP.day; if (onTime(d)) xp += XP.onTime; }
+    });
+    xp += sumValues(state.sprints) * XP.sprint;
+    xp += state.bugs * XP.bug;
+    return xp;
+  }
+  function rankFor(xp) {
+    var r = 0;
+    for (var i = 0; i < RANKS.length; i++) if (xp >= RANKS[i].xp) r = i;
+    return r;
+  }
+
+  var ACH = [
+    { id: "first", mono: "1", name: "Knife Skills", desc: "Tick your first step", test: function () { return Object.keys(state.done).length > 0; } },
+    { id: "zone", mono: "Z", name: "In the Zone", desc: "Finish a focus sprint", test: function () { return sumValues(state.sprints) >= 1; } },
+    { id: "headset", mono: "VR", name: "Hello, Headset", desc: "Beat the Service 1 boss", test: function () { return isDone("d1.boss"); } },
+    { id: "green", mono: "OK", name: "Green Bar", desc: "Get the RoundTimer tests passing", test: function () { return isDone("d2.q2.s2"); } },
+    { id: "dish", mono: "UP", name: "Order Up", desc: "Serve your first dish", test: function () { return isDone("d3.boss"); } },
+    { id: "radio", mono: "FM", name: "No Peeking", desc: "Write LoudRadio yourself", test: function () { return isDone("d5.q0.s8"); } },
+    { id: "half", mono: "1/2", name: "Family Meal", desc: "Tag v0.1-local", test: function () { return isDone("d6.q1.s1"); } },
+    { id: "wired", mono: "2P", name: "Two Windows", desc: "Beat the Service 7 boss", test: function () { return isDone("d7.boss"); } },
+    { id: "online", mono: "WWW", name: "Join Code", desc: "Play online over Relay", test: function () { return isDone("d9.q0.s4"); } },
+    { id: "deep", mono: "4x", name: "Deep Fry", desc: "4 focus sprints in one day", test: function () { return Object.keys(state.sprints).some(function (k) { return state.sprints[k] >= 4; }); } },
+    { id: "ontime", mono: "3", name: "Service on Time", desc: "Finish 3 services by their date", test: function () { return DAYS.filter(onTime).length >= 3; } },
+    { id: "ahead", mono: "+1", name: "Ahead of the Rush", desc: "Finish a service before its date", test: function () { return DAYS.some(function (d) { return state.dayDone[d.id] && state.dayDone[d.id] < plannedDate(d.index); }); } },
+    { id: "bug5", mono: "5", name: "Exterminator", desc: "Squash 5 bugs", test: function () { return state.bugs >= 5; } },
+    { id: "bug20", mono: "20", name: "Pest Control", desc: "Squash 20 bugs", test: function () { return state.bugs >= 20; } },
+    { id: "parked", mono: "P", name: "Parked It", desc: "Use the brain dump", test: function () { return (state.notes || "").trim().length > 0; } },
+    { id: "comeback", mono: "R", name: "Back on the Line", desc: "Replan after a slip", test: function () { return state.replans > 0; } },
+    { id: "grand", mono: "*", name: "Grand Opening", desc: "Finish all nine services", test: function () { return DAYS.every(dayComplete); } }
+  ];
+  function unlockedSet() {
+    var set = {};
+    ACH.forEach(function (a) { if (a.test()) set[a.id] = true; });
+    return set;
+  }
+
+  // ------------------------------------------------------------------
+  // Sync: private per-person document, with this browser as a cache
+  // ------------------------------------------------------------------
+  var remote = { ref: null, saving: false, again: false, timer: null };
+  function setSync(text, cls) {
+    var chip = document.getElementById("chip-sync");
+    chip.textContent = text;
+    chip.className = "chip " + (cls || "quiet");
+  }
+  function scheduleSave() {
+    if (!remote.ref) return;
+    clearTimeout(remote.timer);
+    remote.timer = setTimeout(flush, 900);
+  }
+  function flush() {
+    if (!remote.ref) return;
+    if (remote.saving) { remote.again = true; return; }
+    remote.saving = true;
+    setSync("Saving...", "quiet");
+    remote.ref.set(clone(state)).then(function () {
+      setSync("Synced", "good");
+    }, function (err) {
+      var code = err && err.code;
+      if (code === "unavailable") { setSync("Retrying...", "quiet"); setTimeout(scheduleSave, 2500 + Math.random() * 2500); }
+      else if (code === "invalid_argument" || code === "revoked" || code === "not_granted") { remote.ref = null; setSync("This browser only", "quiet"); }
+      else setSync("Not synced", "warn");
+    }).then(function () {
+      remote.saving = false;
+      if (remote.again) { remote.again = false; flush(); }
+    });
+  }
+  function initRemote() {
+    if (!window.claude || typeof window.claude.use !== "function") return;
+    Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function (caps) {
+      var db = caps[0], user = caps[1];
+      if (!db || !user) return null;
+      return user.id().then(function (uid) {
+        if (!uid) return;
+        remote.ref = db.doc("data/users/" + uid + "/quest");
+        setSync("Connecting...", "quiet");
+        remote.ref.onSnapshot(function (snap) {
+          if (snap.metadata.hasPendingWrites) return;
+          if (!snap.exists) { if (state.updatedAt) scheduleSave(); else setSync("Synced", "good"); return; }
+          var incoming = snap.data() || {};
+          if ((incoming.updatedAt || 0) > (state.updatedAt || 0)) {
+            state = normalize(clone(incoming));
+            saveLocal();
+            renderAll(false);
+            fillInputs();
+          } else if ((incoming.updatedAt || 0) < (state.updatedAt || 0)) {
+            scheduleSave();
+          }
+          setSync("Synced", "good");
+        }, function () { remote.ref = null; setSync("This browser only", "quiet"); });
+      });
+    }).catch(function () { setSync("This browser only", "quiet"); });
+  }
+
+  // ------------------------------------------------------------------
+  // Mutations: every change goes through commit()
+  // ------------------------------------------------------------------
+  function commit(opts) {
+    opts = opts || {};
+    var beforeXp = currentXp, beforeRank = rankFor(beforeXp), beforeAch = currentAch;
+
+    // keep dayDone in step with ticks
+    DAYS.forEach(function (d) {
+      if (dayComplete(d)) { if (!state.dayDone[d.id]) state.dayDone[d.id] = today(); }
+      else delete state.dayDone[d.id];
+    });
+
+    state.updatedAt = Date.now();
+    saveLocal();
+    renderAll(true);
+    scheduleSave();
+
+    var gained = currentXp - beforeXp;
+    var msgs = [];
+    if (gained > 0 && !opts.silentXp) msgs.push("<b>+" + gained + " XP</b>");
+    Object.keys(currentAch).forEach(function (id) {
+      if (!beforeAch[id]) { var a = ACH.filter(function (x) { return x.id === id; })[0]; msgs.push("Achievement: " + esc(a.name)); }
+    });
+    if (opts.extra) msgs.push(opts.extra);
+    if (msgs.length) toast(msgs.join(" · "));
+    var newRank = rankFor(currentXp);
+    if (newRank > beforeRank) levelUp(newRank);
+  }
+
+  function toggleStep(id, value, refocus) {
+    if (value) { state.done[id] = today(); delete state.parked[id]; }
+    else delete state.done[id];
+    var step = STEP_BY_ID[id];
+    var extra = "";
+    if (value && step.boss) extra = "Boss down!";
+    if (value && dayComplete(step.day)) {
+      extra = "Service " + (step.day.index + 1) + " complete";
+      var rw = state.rewards["d" + (step.day.index + 1)];
+      if (rw) extra += ". Reward unlocked: " + esc(rw);
+    }
+    commit({ extra: extra });
+    if (refocus) { var el = document.getElementById("cb-" + id); if (el) el.focus(); }
+  }
+
+  // ------------------------------------------------------------------
+  // Rendering
+  // ------------------------------------------------------------------
+  var currentXp = 0, currentAch = {}, selectedDay = null;
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function chapterUrl(ch) { return GUIDE + "#ch" + ch; }
+
+  function firstIncompleteDay() {
+    for (var i = 0; i < DAYS.length; i++) if (!dayComplete(DAYS[i])) return DAYS[i];
+    return null;
+  }
+  function nextStep() {
+    var day = firstIncompleteDay();
+    if (!day) return null;
+    var open = day.steps.filter(function (s) { return !isDone(s.id); });
+    var fresh = open.filter(function (s) { return !state.parked[s.id]; });
+    return { step: (fresh[0] || open[0]), parkedCount: open.length - fresh.length };
+  }
+
+  function renderHud() {
+    var xp = currentXp, r = rankFor(xp), rank = RANKS[r], next = RANKS[r + 1];
+    document.getElementById("lvl-num").textContent = r + 1;
+    document.getElementById("lvl-name").textContent = rank.name;
+    document.getElementById("lvl-sub").textContent = "Level " + (r + 1) + " of " + RANKS.length + " · " + rank.line;
+    document.getElementById("xp-total").textContent = xp.toLocaleString() + " XP";
+    var pct = 100;
+    if (next) {
+      pct = Math.max(0, Math.min(100, (xp - rank.xp) / (next.xp - rank.xp) * 100));
+      document.getElementById("xp-next").textContent = (next.xp - xp).toLocaleString() + " XP to " + next.name;
+    } else {
+      document.getElementById("xp-next").textContent = "Top rank reached";
+    }
+    document.getElementById("xp-fill").style.width = pct.toFixed(1) + "%";
+    document.getElementById("xp-track").setAttribute("aria-valuenow", Math.round(pct));
+
+    // schedule status
+    var t = today();
+    var expected = DAYS.filter(function (d) { return plannedDate(d.index) < t; }).length;
+    var doneCount = DAYS.filter(dayComplete).length;
+    var chip = document.getElementById("chip-status");
+    var todays = DAYS.filter(function (d) { return plannedDate(d.index) === t; })[0];
+    if (doneCount === DAYS.length) { chip.textContent = "All nine services done"; chip.className = "chip good"; }
+    else if (doneCount < expected) { chip.textContent = "Behind by " + (expected - doneCount) + " · replan in settings"; chip.className = "chip warn"; }
+    else if (doneCount > expected + (todays ? 1 : 0)) { chip.textContent = "Ahead by " + (doneCount - expected - (todays ? 1 : 0)); chip.className = "chip good"; }
+    else if (todays) { chip.textContent = "Today: Service " + (todays.index + 1); chip.className = "chip"; }
+    else { chip.textContent = "Rest day · kitchen closed"; chip.className = "chip quiet"; }
+
+    var last = plannedDate(DAYS.length - 1);
+    var left = daysBetween(t, last);
+    document.getElementById("cd-days").textContent = doneCount === DAYS.length ? "Open!" : (left > 0 ? left + (left === 1 ? " day" : " days") : (left === 0 ? "Today" : "Overdue"));
+    document.getElementById("cd-label").textContent = doneCount === DAYS.length ? "Grand Opening achieved" : "until Grand Opening · " + pretty(last);
+  }
+
+  function renderNext() {
+    var box = document.getElementById("next");
+    var n = nextStep();
+    var done = document.getElementById("next-done"), open = document.getElementById("next-open"), skip = document.getElementById("next-skip");
+    var parkedNote = document.getElementById("next-parked");
+    if (!n) {
+      box.classList.remove("boss");
+      document.getElementById("next-eyebrow").textContent = "Kitchen closed";
+      document.getElementById("next-what").textContent = "Every ticket is served. Dumpling Kitchen is open.";
+      document.getElementById("next-where").textContent = "Pick a 'where next' feature from chapter 18 and start a new campaign.";
+      done.hidden = true; skip.hidden = true; open.href = chapterUrl(18);
+      parkedNote.hidden = true;
+      return;
+    }
+    var s = n.step, q = s.quest;
+    done.hidden = false; skip.hidden = false;
+    box.classList.toggle("boss", s.boss);
+    document.getElementById("next-eyebrow").textContent = (s.boss ? "Boss fight" : "Next ticket") + " · Service " + (s.day.index + 1) + " · " + s.day.name;
+    document.getElementById("next-what").textContent = s.text;
+    document.getElementById("next-where").textContent = "Chapter " + q.ch + ": " + q.title;
+    done.textContent = s.boss ? "Boss beaten  +" + XP.boss + " XP" : "Done  +" + XP.step + " XP";
+    done.className = "btn primary" + (s.boss ? " boss" : "");
+    done.setAttribute("data-step", s.id);
+    skip.setAttribute("data-step", s.id);
+    skip.disabled = !!state.parked[s.id];
+    open.href = chapterUrl(q.ch);
+    parkedNote.hidden = n.parkedCount === 0;
+    parkedNote.textContent = n.parkedCount ? n.parkedCount + " parked step" + (n.parkedCount > 1 ? "s" : "") + " waiting in this service. They'll come back once the rest is done." : "";
+  }
+
+  function renderRail() {
+    var rail = document.getElementById("rail");
+    var t = today();
+    var html = DAYS.map(function (d) {
+      var p = dayProgress(d), cls = "day";
+      var date = plannedDate(d.index);
+      if (dayComplete(d)) cls += " done";
+      if (date === t && !dayComplete(d)) cls += " today";
+      if (date < t && !dayComplete(d)) cls += " late";
+      if (selectedDay === d) cls += " selected";
+      return '<button type="button" class="' + cls + '" data-day="' + d.index + '">' +
+        '<span class="n"><span>Service ' + (d.index + 1) + '</span><span class="d">' + esc(pretty(date)) + '</span></span>' +
+        '<span class="t">' + esc(d.name) + '</span>' +
+        '<span class="bar"><i style="width:' + Math.round(p * 100) + '%"></i></span></button>';
+    }).join("");
+    rail.innerHTML = html;
+    var doneCount = DAYS.filter(dayComplete).length;
+    document.getElementById("campaign-aside").textContent = doneCount + " / 9 served";
+  }
+
+  function renderDay() {
+    var d = selectedDay || firstIncompleteDay() || DAYS[DAYS.length - 1];
+    var next = nextStep();
+    var nextId = next && next.step ? next.step.id : null;
+    var panel = document.getElementById("day-panel");
+    var stepsDone = d.steps.filter(function (s) { return isDone(s.id); }).length;
+    var html = '<div class="day-head"><h3>Service ' + (d.index + 1) + ': ' + esc(d.name) + '</h3>' +
+      '<span class="meta">' + esc(pretty(plannedDate(d.index))) + ' · ' + d.hours + ' h · ' + stepsDone + '/' + d.steps.length + ' steps' +
+      (state.dayDone[d.id] ? ' · served ' + esc(pretty(state.dayDone[d.id])) : '') + '</span></div>' +
+      '<p class="day-blurb">' + esc(d.blurb) + '</p>';
+    d.quests.forEach(function (q) {
+      html += '<div class="quest' + (questComplete(q) ? ' complete' : '') + '"><div class="quest-head"><h4><span class="ch">Ch ' + q.ch + '</span>' + esc(q.title) + '</h4>' +
+        '<span class="meta"><span>~' + q.hours + ' h · +' + XP.quest + ' XP</span><a href="' + chapterUrl(q.ch) + '" target="_blank" rel="noopener">Open chapter</a></span></div><ul class="steps">';
+      var ids = q.stepIds.slice(); if (q.bossId) ids.push(q.bossId);
+      ids.forEach(function (id) {
+        var s = STEP_BY_ID[id], checked = isDone(id);
+        var cls = (checked ? "checked" : "") + (state.parked[id] && !checked ? " parked" : "") + (id === nextId ? " is-next" : "") + (s.boss ? " boss" : "");
+        var label = (s.boss ? "Boss: " : "") + s.text;
+        html += '<li class="' + cls.trim() + '"><input type="checkbox" id="cb-' + id + '" data-step="' + id + '"' + (checked ? " checked" : "") + '>' +
+          '<label for="cb-' + id + '">' + esc(label) + '</label><span class="xp">+' + (s.boss ? XP.boss : XP.step) + '</span></li>';
+      });
+      html += "</ul></div>";
+    });
+    panel.innerHTML = html;
+  }
+
+  function renderBadges() {
+    var got = currentAch, n = Object.keys(got).length;
+    document.getElementById("badge-count").textContent = n + " / " + ACH.length;
+    document.getElementById("badges").innerHTML = ACH.map(function (a) {
+      return '<div class="badge' + (got[a.id] ? " got" : "") + '" title="' + esc(a.desc) + '"><div class="medal">' + esc(a.mono) + '</div><div><b>' + esc(a.name) + '</b><br>' + esc(a.desc) + '</div></div>';
+    }).join("");
+  }
+
+  function renderSide() {
+    document.getElementById("bug-num").textContent = state.bugs;
+    ["d3", "d6", "d9"].forEach(function (id) {
+      var el = document.getElementById("reward-" + id.slice(1));
+      var unlocked = isDone(id + ".boss");
+      el.classList.toggle("unlocked", unlocked);
+      el.querySelector("label").textContent = (unlocked ? "Unlocked! " : "") + el.querySelector("label").textContent.replace(/^Unlocked! /, "");
+    });
+    var t = today();
+    var mins = state.minutes[t] || 0, sp = state.sprints[t] || 0;
+    document.getElementById("today-time").textContent = "Today: " + sp + " sprint" + (sp === 1 ? "" : "s") + " · " + Math.floor(mins / 60) + " h " + (mins % 60) + " min focused · goal 5 h";
+    ["25", "45"].forEach(function (len) { document.getElementById("len-" + len).setAttribute("aria-pressed", String(state.sprintLen === +len)); });
+    if (!timer.running) showIdleDial();
+    renderSettingsSummary();
+  }
+
+  function renderSettingsSummary() {
+    document.getElementById("set-summary").textContent =
+      "Service 1: " + pretty(plannedDate(0)) + " · Grand Opening: " + pretty(plannedDate(DAYS.length - 1)) + " · " + (DAYS.length * 5) + " h total.";
+  }
+
+  function renderAll(fromCommit) {
+    currentXp = computeXp();
+    currentAch = unlockedSet();
+    renderHud();
+    renderNext();
+    renderRail();
+    renderDay();
+    renderBadges();
+    renderSide();
+  }
+
+  function fillInputs() {
+    document.getElementById("rw-3").value = state.rewards.d3 || "";
+    document.getElementById("rw-6").value = state.rewards.d6 || "";
+    document.getElementById("rw-9").value = state.rewards.d9 || "";
+    document.getElementById("notes").value = state.notes || "";
+    document.getElementById("set-start").value = state.startDate;
+    var days = document.getElementById("set-days");
+    days.innerHTML = [1, 2, 3, 4, 5, 6, 0].map(function (d) {
+      return '<label><input type="checkbox" id="wd-' + d + '" data-wd="' + d + '"' + (state.workdays.indexOf(d) !== -1 ? " checked" : "") + '>' + DOW[d] + '</label>';
+    }).join("");
+  }
+
+  // ------------------------------------------------------------------
+  // Feedback
+  // ------------------------------------------------------------------
+  function toast(html) {
+    var box = document.getElementById("toasts");
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = html;
+    box.appendChild(el);
+    setTimeout(function () { el.remove(); }, 3600);
+  }
+
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function levelUp(r) {
+    var rank = RANKS[r];
+    document.getElementById("lu-title").textContent = rank.name;
+    document.getElementById("lu-text").textContent = "Promoted to level " + (r + 1) + ". " + rank.line;
+    var box = document.getElementById("levelup");
+    box.hidden = false;
+    document.getElementById("lu-close").focus();
+    chime([523, 659, 784, 1047]);
+    if (!reduceMotion) confetti();
+  }
+  document.getElementById("lu-close").addEventListener("click", function () { document.getElementById("levelup").hidden = true; });
+  document.getElementById("levelup").addEventListener("click", function (e) { if (e.target.id === "levelup") e.currentTarget.hidden = true; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") document.getElementById("levelup").hidden = true; });
+
+  function confetti() {
+    var c = document.createElement("canvas");
+    c.className = "confetti";
+    document.body.appendChild(c);
+    var ctx = c.getContext("2d");
+    var w = c.width = window.innerWidth, h = c.height = window.innerHeight;
+    var styles = getComputedStyle(document.documentElement);
+    var colors = ["--xp", "--accent", "--boss", "--good"].map(function (v) { return styles.getPropertyValue(v).trim() || "#c90"; });
+    var bits = [];
+    for (var i = 0; i < 140; i++) bits.push({ x: w / 2, y: h / 3, vx: (Math.random() - 0.5) * 14, vy: Math.random() * -12 - 4, r: Math.random() * 6 + 3, c: colors[i % colors.length], a: Math.random() * 6 });
+    var frames = 0;
+    (function tick() {
+      ctx.clearRect(0, 0, w, h);
+      bits.forEach(function (b) { b.vy += 0.35; b.x += b.vx; b.y += b.vy; b.a += 0.2; ctx.fillStyle = b.c; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillRect(-b.r / 2, -b.r / 4, b.r, b.r / 2); ctx.restore(); });
+      if (++frames < 150) requestAnimationFrame(tick); else c.remove();
+    })();
+  }
+
+  var audio = null;
+  function chime(notes) {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      notes.forEach(function (f, i) {
+        var o = audio.createOscillator(), g = audio.createGain(), t0 = audio.currentTime + i * 0.12;
+        o.type = "triangle"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+        o.connect(g); g.connect(audio.destination); o.start(t0); o.stop(t0 + 0.4);
+      });
+    } catch (e) { /* sound is optional */ }
+  }
+
+  // ------------------------------------------------------------------
+  // Focus timer
+  // ------------------------------------------------------------------
+  var timer = { running: false, mode: "focus", endsAt: 0, total: 0, tick: null };
+  function lengths() { return state.sprintLen === 45 ? { focus: 45, rest: 10 } : { focus: 25, rest: 5 }; }
+  function fmt(sec) { sec = Math.max(0, Math.ceil(sec)); return pad(Math.floor(sec / 60)) + ":" + pad(sec % 60); }
+  function showIdleDial() {
+    var dial = document.getElementById("dial");
+    dial.classList.remove("break");
+    dial.style.setProperty("--p", 0);
+    document.getElementById("dial-time").textContent = fmt(lengths().focus * 60);
+  }
+  function startTimer(mode) {
+    chime([660]); // also unlocks audio on this click
+    var len = lengths();
+    timer.mode = mode;
+    timer.total = (mode === "focus" ? len.focus : len.rest) * 60;
+    timer.endsAt = Date.now() + timer.total * 1000;
+    timer.running = true;
+    document.getElementById("timer-start").disabled = true;
+    document.getElementById("timer-stop").disabled = false;
+    var n = nextStep();
+    document.getElementById("timer-mode").textContent = mode === "focus" ? "Focus: one ticket only" : "Break: stand up, drink water";
+    document.getElementById("timer-hint").textContent = mode === "focus" ? (n && n.step ? n.step.text : "Free practice") : "Screens down. The kitchen will wait.";
+    document.getElementById("dial").classList.toggle("break", mode !== "focus");
+    clearInterval(timer.tick);
+    timer.tick = setInterval(updateTimer, 250);
+    updateTimer();
+  }
+  function stopTimer(message) {
+    clearInterval(timer.tick);
+    timer.running = false;
+    document.getElementById("timer-start").disabled = false;
+    document.getElementById("timer-stop").disabled = true;
+    document.getElementById("timer-start").textContent = "Start";
+    document.getElementById("timer-mode").textContent = message || "Ready when you are";
+    document.getElementById("timer-hint").textContent = "One ticket, one timer. Phone face down, everything else closed.";
+    showIdleDial();
+  }
+  function updateTimer() {
+    var left = (timer.endsAt - Date.now()) / 1000;
+    document.getElementById("dial-time").textContent = fmt(left);
+    document.getElementById("dial").style.setProperty("--p", Math.min(1, 1 - left / timer.total));
+    if (left > 0) return;
+    if (timer.mode === "focus") {
+      var t = today();
+      state.sprints[t] = (state.sprints[t] || 0) + 1;
+      state.minutes[t] = (state.minutes[t] || 0) + lengths().focus;
+      chime([784, 988, 1175]);
+      commit({ extra: "Sprint done. Take your break." });
+      startTimer("rest");
+    } else {
+      chime([523, 392]);
+      stopTimer("Break over. Back to the pass?");
+      toast("Break's over. Next ticket's waiting.");
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Events
+  // ------------------------------------------------------------------
+  document.getElementById("next-done").addEventListener("click", function (e) {
+    var id = e.currentTarget.getAttribute("data-step");
+    if (id) toggleStep(id, true);
+  });
+  document.getElementById("next-skip").addEventListener("click", function (e) {
+    var id = e.currentTarget.getAttribute("data-step");
+    if (!id) return;
+    state.parked[id] = true;
+    commit({ extra: "Parked. Moving on." });
+  });
+  document.getElementById("next-sprint").addEventListener("click", function () {
+    if (!timer.running) startTimer("focus");
+    document.getElementById("timer-title").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  });
+  document.getElementById("timer-start").addEventListener("click", function () { startTimer("focus"); });
+  document.getElementById("timer-stop").addEventListener("click", function () { stopTimer("Stopped. No XP for partial sprints, but no harm done."); });
+  ["25", "45"].forEach(function (len) {
+    document.getElementById("len-" + len).addEventListener("click", function () {
+      if (timer.running) return;
+      state.sprintLen = +len;
+      commit({ silentXp: true });
+    });
+  });
+
+  document.getElementById("rail").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-day]");
+    if (!btn) return;
+    selectedDay = DAYS[+btn.getAttribute("data-day")];
+    renderRail();
+    renderDay();
+  });
+  document.getElementById("day-panel").addEventListener("change", function (e) {
+    var id = e.target.getAttribute("data-step");
+    if (id) toggleStep(id, e.target.checked, true);
+  });
+
+  document.getElementById("bug-add").addEventListener("click", function () { state.bugs += 1; commit(); });
+  document.getElementById("bug-undo").addEventListener("click", function () { if (state.bugs > 0) { state.bugs -= 1; commit({ silentXp: true }); } });
+
+  var typingTimer = null;
+  function onTyping(apply) {
+    return function (e) {
+      apply(e.target.value);
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(function () { commit({ silentXp: true }); }, 700);
+    };
+  }
+  document.getElementById("rw-3").addEventListener("input", onTyping(function (v) { state.rewards.d3 = v; }));
+  document.getElementById("rw-6").addEventListener("input", onTyping(function (v) { state.rewards.d6 = v; }));
+  document.getElementById("rw-9").addEventListener("input", onTyping(function (v) { state.rewards.d9 = v; }));
+  document.getElementById("notes").addEventListener("input", onTyping(function (v) { state.notes = v; }));
+
+  document.getElementById("set-start").addEventListener("change", function (e) {
+    if (!e.target.value) return;
+    state.startDate = e.target.value;
+    state.anchor = null;
+    commit({ silentXp: true });
+  });
+  document.getElementById("set-days").addEventListener("change", function (e) {
+    var d = e.target.getAttribute("data-wd");
+    if (d === null) return;
+    var picked = Array.prototype.slice.call(document.querySelectorAll("#set-days input:checked")).map(function (i) { return +i.getAttribute("data-wd"); });
+    if (!picked.length) { e.target.checked = true; toast("Keep at least one working day."); return; }
+    state.workdays = picked;
+    commit({ silentXp: true });
+  });
+  document.getElementById("replan").addEventListener("click", function () {
+    var day = firstIncompleteDay();
+    if (!day) return;
+    state.anchor = { day: day.index, date: today() };
+    state.replans += 1;
+    commit({ extra: "Replanned from today. Fresh start." });
+  });
+  var resetArmed = false;
+  document.getElementById("reset").addEventListener("click", function (e) {
+    var btn = e.currentTarget;
+    if (!resetArmed) {
+      resetArmed = true;
+      btn.textContent = "Click again to wipe everything";
+      setTimeout(function () { resetArmed = false; btn.textContent = "Reset all progress"; }, 4000);
+      return;
+    }
+    resetArmed = false;
+    btn.textContent = "Reset all progress";
+    var keep = { startDate: today(), workdays: state.workdays, rewards: state.rewards };
+    state = defaultState();
+    state.workdays = keep.workdays; state.rewards = keep.rewards;
+    fillInputs();
+    commit({ silentXp: true, extra: "Progress reset." });
+  });
+
+  // ------------------------------------------------------------------
+  // Boot
+  // ------------------------------------------------------------------
+  fillInputs();
+  renderAll(false);
+  initRemote();
+  setInterval(function () { renderHud(); }, 60000); // roll the date over at midnight
+})();
+</script>
+
+</body>
+</html>

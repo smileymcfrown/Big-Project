@@ -16,9 +16,10 @@ Notes on the 2022 VR dumpling project and a plan for rebuilding it in current Un
 | [`02-upgrade-or-rebuild.md`](02-upgrade-or-rebuild.md) | Why rebuilding beats upgrading, current versions, how to bring the old art across |
 | [`DECISIONS-TO-REVIEW.md`](DECISIONS-TO-REVIEW.md) | Every call I made without asking you (D1–D29), with alternatives |
 | [`tutorial/dumpling-kitchen-tutorial.html`](tutorial/dumpling-kitchen-tutorial.html) | The tutorial (18 chapters + appendices) |
+| [`tutorial/dumpling-kitchen-quest.html`](tutorial/dumpling-kitchen-quest.html) | The same guide as a game: 9 services of 5 hours, XP and chef ranks, boss fights, focus sprints, achievements, deadline countdown |
 | [`tutorial/code/part1-local/`](tutorial/code/part1-local/) | Every Part 1 script, laid out as `Assets/_Project/...` so you can copy the folder into a new project |
 | [`tutorial/code/part2-networked/`](tutorial/code/part2-networked/) | Part 2 scripts: new files plus the replacements for files that change |
-| [`tutorial/src/`](tutorial/src/) + [`tutorial/build.py`](tutorial/build.py) | Tutorial source. The build inlines the real `.cs` files so the page and the code never drift apart |
+| [`tutorial/src/`](tutorial/src/), [`tutorial/src-quest/`](tutorial/src-quest/) + [`tutorial/build.py`](tutorial/build.py) | Source for both pages. The build inlines the real `.cs` files into the guide so the page and the code never drift apart |
 
 ## Editing the tutorial
 

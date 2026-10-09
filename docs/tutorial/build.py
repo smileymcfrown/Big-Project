@@ -8,10 +8,14 @@ Markers in the src files look like:
 part1 -> code/part1-local/Assets/_Project/
 part2 -> code/part2-networked/Assets/_Project/
 
+Also builds the gamified quest board from src-quest/*.html.
+
 Outputs:
-    dumpling-kitchen-tutorial.html      a complete page you can open from disk
-    <fragment path>                      (optional, 1st argument) the same page body without
-                                         <html>/<head>/<body>, for publishing as an artifact
+    dumpling-kitchen-tutorial.html      the guide, a complete page you can open from disk
+    dumpling-kitchen-quest.html         the quest board, likewise
+    [1st argument]                      optional: the guide as a fragment (no <html>/<head>/<body>)
+                                        for publishing as an artifact
+    [2nd argument]                      optional: the quest board as a fragment
 """
 import html
 import re
@@ -50,8 +54,8 @@ def render_code(match: re.Match) -> str:
     )
 
 
-def main() -> None:
-    parts = sorted(SRC.glob("*.html"))
+def build(src: Path, out_name: str, fragment_arg: int, mermaid: bool) -> None:
+    parts = sorted(src.glob("*.html"))
     head = parts[0].read_text(encoding="utf-8")
     body = "\n".join(p.read_text(encoding="utf-8") for p in parts[1:])
     body, count = MARKER.subn(render_code, body)
@@ -59,16 +63,21 @@ def main() -> None:
     full = (
         "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
-        f"{head}</head>\n<body>\n{body}\n{MERMAID}</body>\n</html>\n"
+        f"{head}</head>\n<body>\n{body}\n{MERMAID if mermaid else ''}</body>\n</html>\n"
     )
-    out = ROOT / "dumpling-kitchen-tutorial.html"
+    out = ROOT / out_name
     out.write_text(full, encoding="utf-8")
     print(f"Wrote {out} ({len(full):,} bytes, {count} code blocks)")
 
-    if len(sys.argv) > 1:
-        fragment = Path(sys.argv[1])
+    if len(sys.argv) > fragment_arg:
+        fragment = Path(sys.argv[fragment_arg])
         fragment.write_text(f"{head}\n{body}\n", encoding="utf-8")
         print(f"Wrote {fragment}")
+
+
+def main() -> None:
+    build(SRC, "dumpling-kitchen-tutorial.html", 1, mermaid=True)
+    build(ROOT / "src-quest", "dumpling-kitchen-quest.html", 2, mermaid=False)
 
 
 if __name__ == "__main__":
