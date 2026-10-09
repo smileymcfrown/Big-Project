@@ -1,0 +1,77 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script>
+(function () {
+  var KEY = 'dumpling-kitchen-guide-progress';
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage blocked: ticks just won't persist */ } }
+
+  var state = load();
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.rail input[data-ch]'));
+  var progress = document.getElementById('progress');
+
+  function refresh() {
+    var done = 0;
+    boxes.forEach(function (box) {
+      box.checked = !!state[box.getAttribute('data-ch')];
+      box.closest('li').classList.toggle('done', box.checked);
+      if (box.checked) done++;
+    });
+    progress.textContent = done + ' / ' + boxes.length + ' done';
+  }
+
+  boxes.forEach(function (box) {
+    box.addEventListener('change', function () {
+      state[box.getAttribute('data-ch')] = box.checked;
+      save(state);
+      refresh();
+    });
+  });
+  document.getElementById('reset-progress').addEventListener('click', function () { state = {}; save(state); refresh(); });
+  refresh();
+
+  if (window.matchMedia('(max-width: 960px)').matches) {
+    document.getElementById('rail-details').open = false;
+  }
+
+  var links = {};
+  Array.prototype.forEach.call(document.querySelectorAll('.rail a[href^="#"]'), function (a) {
+    links[a.getAttribute('href').slice(1)] = a;
+  });
+  if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        Object.keys(links).forEach(function (id) { links[id].classList.remove('current'); });
+        var link = links[entry.target.id];
+        if (link) link.classList.add('current');
+      });
+    }, { rootMargin: '-15% 0px -75% 0px' });
+    Array.prototype.forEach.call(document.querySelectorAll('section.chapter'), function (section) { observer.observe(section); });
+  }
+
+  function selectText(el) {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('figure.code button.copy'), function (button) {
+    button.addEventListener('click', function () {
+      var code = button.closest('figure').querySelector('code');
+      function flash(label) { button.textContent = label; setTimeout(function () { button.textContent = 'Copy'; }, 1600); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code.textContent).then(
+          function () { flash('Copied'); },
+          function () { selectText(code); flash('Selected, press Ctrl+C'); });
+      } else {
+        selectText(code);
+        flash('Selected, press Ctrl+C');
+      }
+    });
+  });
+})();
+</script>

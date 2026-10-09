@@ -1,0 +1,149 @@
+<section class="chapter" id="ch10">
+<div class="ticket"><div class="num">10</div><div><div class="meta">Core gameplay · 2.5 hours</div><h2>Sabotage: the OOP showcase</h2></div></div>
+<p>This chapter is where the design pays off. Five different sabotages, one set of rules, and adding a sixth takes about ten lines.</p>
+<figure class="diagram">
+<pre class="mermaid">
+classDiagram
+  class IDumplingInteractable {
+    &lt;&lt;interface&gt;&gt;
+    +Prompt string
+    +InteractionPoint Transform
+    +CanInteract(dumpling) bool
+    +Interact(dumpling)
+  }
+  class SabotageTarget {
+    &lt;&lt;abstract&gt;&gt;
+    +IsSabotaged bool
+    +Interact(dumpling)
+    +Restore()
+    #OnSabotagedBy(dumpling)
+    #OnSabotaged()*
+    #OnRestored()*
+  }
+  IDumplingInteractable <|.. SabotageTarget
+  SabotageTarget <|-- GasValve
+  SabotageTarget <|-- LightSwitch
+  SabotageTarget <|-- PowerPlug
+  SabotageTarget <|-- Knockable
+  SabotageTarget <|-- ChefHat
+  DumplingInteractor --> IDumplingInteractable : finds and triggers
+  ChefRestoreHandle --> SabotageTarget : Restore()
+</pre>
+<figcaption>The dumpling side only knows the interface. The chef side only knows the base class. Neither knows any concrete sabotage.</figcaption>
+</figure>
+
+<h3>Step 1 · What a dumpling can interact with</h3>
+<!--@code part1 Scripts/Dumplings/IDumplingInteractable.cs-->
+<!--@code part1 Scripts/Dumplings/DumplingInteractor.cs-->
+<!--@code part1 Scripts/UI/InteractionPromptDisplay.cs-->
+<div class="note why"><span class="tag">Why · NonAlloc physics queries</span><p><code>Physics.OverlapSphere</code> returns a new array every call. Called every frame by four dumplings, that's a steady stream of garbage, and garbage collection pauses are dropped frames, which in VR the chef can <em>feel</em>. <code>OverlapSphereNonAlloc</code> writes into an array we allocated once.</p></div>
+<div class="note gotcha"><span class="tag">Gotcha · interfaces and destroyed objects</span><p>Unity's "fake null" (a destroyed object that <code>== null</code>) only works on variables typed as a Unity object. A destroyed component held in an <em>interface</em> variable is not <code>null</code>. <code>DumplingInteractor.IsAlive</code> handles it; remember the trick for your own interface references.</p></div>
+
+<h3>Step 2 · The base class: rules in one place</h3>
+<!--@code part1 Scripts/Sabotage/SabotageTarget.cs-->
+<div class="note why"><span class="tag">Why · the Template Method pattern</span><p><code>Interact()</code> is the <em>template</em>: check the rules, run the hooks, update the score. It's not <code>virtual</code>, so no subclass can forget the cooldown or skip telling the round manager. Subclasses fill in the hooks:</p>
+<ul><li><code>OnSabotagedBy(dumpling)</code>: one-off effect from a specific dumpling (a shove). Optional.</li><li><code>OnSabotaged()</code> / <code>OnRestored()</code>: make the world match the state. Required.</li></ul>
+<p>Keep this split in mind: <strong>one-off effects</strong> vs <strong>state</strong>. It's exactly the split networking needs in Part 2, and it's why the subclasses won't change there.</p></div>
+
+<h3>Step 3 · Five sabotages</h3>
+<!--@code part1 Scripts/Sabotage/GasValve.cs-->
+<!--@code part1 Scripts/Sabotage/LightSwitch.cs-->
+<!--@code part1 Scripts/Sabotage/PowerPlug.cs-->
+<!--@code part1 Scripts/Sabotage/Knockable.cs-->
+<!--@code part1 Scripts/Sabotage/ChefHat.cs-->
+
+<h3>Step 4 · The chef's side</h3>
+<!--@code part1 Scripts/Chef/ChefRestoreHandle.cs-->
+<!--@code part1 Scripts/Chef/ChefVisionBlocker.cs-->
+<!--@code part1 Scripts/UI/SabotageAlertDisplay.cs-->
+<div class="note thennow"><span class="tag">Then → now</span><div class="thennow-grid">
+<div><h5>2022 · VrWristUI</h5><pre class="plain"><code>void Update()
+{
+    exitGameButton.onClick.AddListener(() =&gt;
+    {
+        Debug.Log("Exiting Game...");
+    });
+}</code></pre><p>A new listener every frame: after a minute, one click runs thousands of times.</p></div>
+<div><h5>Now</h5><p>Subscribe once in <code>OnEnable</code>, unsubscribe in <code>OnDisable</code> (<code>ChefRestoreHandle</code>, <code>SabotageAlertDisplay</code>). A wrist panel is still a great idea for the alert list: parent a small world-space canvas to the left controller.</p></div>
+</div></div>
+
+<h3>Step 5 · Put them in the kitchen</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Target</th><th>GameObject setup</th><th>Chef fixes it by</th></tr></thead>
+<tbody>
+<tr><td>Gas valve</td><td>Valve mesh on the wall, collider on <code>Sabotage</code> layer, <code>GasValve</code> (Stove + handle assigned), <strong>XR Simple Interactable</strong>, <code>ChefRestoreHandle</code></td><td>Grabbing the valve handle</td></tr>
+<tr><td>Light switch</td><td>Switch plate, <code>LightSwitch</code> with the kitchen's lights, XR Simple Interactable, <code>ChefRestoreHandle</code></td><td>Pressing the switch</td></tr>
+<tr><td>Rice cooker plug</td><td>Plug mesh at the socket, <code>PowerPlug</code> pointing at an <code>ElectricHob</code>, XR Simple Interactable, <code>ChefRestoreHandle</code></td><td>Grabbing the plug</td></tr>
+<tr><td>Knock-over pot / jug</td><td>The existing grabbable prop + <code>Knockable</code> + <code>ChefRestoreHandle</code> (works with XR Grab Interactable too)</td><td>Picking it back up</td></tr>
+<tr><td>Chef's hat</td><td>Child of the XR Origin's <strong>Main Camera</strong>: hat mesh (layer <code>HiddenFromChef</code>), a generous collider on <code>Sabotage</code>, <code>ChefHat</code>, XR Simple Interactable, <code>ChefRestoreHandle</code></td><td>Reaching up and grabbing it</td></tr>
+</tbody></table></div>
+<ol class="steps">
+  <li>On the XR Main Camera, add <code>ChefVisionBlocker</code> with a child <strong>Blindfold</strong>: a Quad 0.1 m in front of the camera, black unlit material, layer <code>ChefOnly</code>.</li>
+  <li>Remove <code>ChefOnly</code> from every dumpling camera's Culling Mask, and <code>HiddenFromChef</code> from the XR camera's.</li>
+  <li>On the Dumpling prefab's <code>DumplingInteractor</code>: Interactable Layers = <code>Sabotage</code>, Reach Origin = <code>ReachPoint</code>. Wire up the <code>InteractionPromptDisplay</code> on its PromptCanvas.</li>
+  <li>Give each target a short Display Name and verb ("Turn off" + "Gas", "Unplug" + "Rice Cooker").</li>
+</ol>
+<div class="note review"><span class="tag">Review D10, D11, D14</span><p>Fix-by-grabbing, a 5 s re-arm cooldown per target, a blindfold for the hat, and these five starter sabotages. The hat is on the chef's head, so dumplings have to climb or jump from a counter to reach it, which makes it the high-risk, high-reward sabotage.</p></div>
+
+<h3>Exercise · add a sixth sabotage</h3>
+<p>Dumplings crank the kitchen radio to full volume; the chef turns it down. Write <code>LoudRadio</code> yourself before peeking. You need: a field for the <code>AudioSource</code>, a normal volume, and the two required overrides.</p>
+<details class="expand"><summary>Show a solution</summary>
+<pre class="plain"><code>using UnityEngine;
+
+namespace DumplingKitchen.Sabotage
+{
+    public sealed class LoudRadio : SabotageTarget
+    {
+        [SerializeField] private AudioSource radio;
+        [SerializeField, Range(0f, 1f)] private float normalVolume = 0.2f;
+
+        protected override void OnSabotaged() =&gt; radio.volume = 1f;
+        protected override void OnRestored() =&gt; radio.volume = normalVolume;
+    }
+}</code></pre>
+<p>No other file changed: the interactor finds it, the prompt shows it, the score counts it, the alert board lists it, and the chef can fix it with a <code>ChefRestoreHandle</code>. That's the open/closed principle at work.</p>
+</details>
+</section>
+
+<section class="chapter" id="ch11">
+<div class="ticket"><div class="num">11</div><div><div class="meta">Local multiplayer · 1.5 hours</div><h2>Couch play on one PC</h2></div></div>
+<p>One PC drives two "audiences": the headset shows the chef's XR camera; the monitor shows up to four dumpling cameras in split-screen. Lara got multi-display output working in NewVRDumpling; here we use split-screen on the main monitor, which needs no extra displays.</p>
+
+<h3>Step 1 · Player Input Manager</h3>
+<p>Add an object <code>DumplingJoiner</code> under <code>--- Systems ---</code> with a <strong>Player Input Manager</strong>:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Setting</th><th>Value</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Notification Behavior</td><td>Invoke C Sharp Events</td><td>Our script subscribes to <code>onPlayerJoined</code> in code</td></tr>
+<tr><td>Join Behavior</td><td>Join Players When Join Action Is Triggered</td><td>Only <kbd>Enter</kbd>/Start join, so the chef's VR controllers can't accidentally spawn a dumpling</td></tr>
+<tr><td>Join Action</td><td>Reference: <code>Dumpling &gt; Lobby/Join</code></td><td></td></tr>
+<tr><td>Player Prefab</td><td>Dumpling</td><td></td></tr>
+<tr><td>Enable Split-Screen</td><td>On</td><td>Uses each PlayerInput's Camera field</td></tr>
+<tr><td>Limit Number Of Players</td><td>On, Max 4</td><td>Matches GameConfig</td></tr>
+</tbody></table></div>
+<!--@code part1 Scripts/Local/LocalPlayerJoiner.cs-->
+
+<h3>Step 2 · What the monitor shows</h3>
+<!--@code part1 Scripts/Local/DesktopViewSetup.cs-->
+<ol class="steps">
+  <li>Add a <strong>LobbyCamera</strong>: a normal Camera looking over the whole kitchen, with a "Press Start / Enter to join" text on the desktop HUD. No AudioListener.</li>
+  <li>Add <code>DesktopViewSetup</code> to <code>DumplingJoiner</code> and assign the lobby camera and the Player Input Manager.</li>
+  <li>Add 4 empty <strong>spawn points</strong> around the kitchen floor and assign them to <code>LocalPlayerJoiner</code>.</li>
+</ol>
+<div class="note why"><span class="tag">Why · desktop-only cameras</span><p>By default every camera can render into the headset. <code>CameraUtility.MakeDesktopOnly</code> sets the camera's target eye to None and turns off URP's XR rendering for it, so dumpling and lobby cameras only draw to the monitor and cost the headset nothing.</p></div>
+<div class="note review"><span class="tag">Review D19, D20</span><p>Up to 4 split-screen dumplings, join with Start/Enter, joining locked during a round, and the headset view is not mirrored to the monitor. If you'd like a spectator view of the chef, set <code>hideHeadsetMirror</code> off and give the lobby camera a corner of the screen.</p></div>
+<div class="note gotcha"><span class="tag">Gotcha · verify on your hardware</span><p>How the XR mirror and desktop cameras share the monitor depends on the runtime. If you see the headset image instead of the split-screen, check both cameras' <em>Target Eye</em> is None, and raise the dumpling cameras' <em>Priority</em> (Depth) above the XR camera's.</p></div>
+
+<h3>Step 3 · Playtest checklist</h3>
+<ol class="steps">
+  <li>Headset on (Link or SteamVR), gamepad in hand, Play from the Kitchen scene.</li>
+  <li>Press Start on the gamepad: a dumpling appears, split-screen kicks in. Press Enter: a second (keyboard) dumpling.</li>
+  <li>The chef rings the bell: 3, 2, 1, then 5:00 counts down on the wall clock and the monitor.</li>
+  <li>A dumpling walks to the gas valve: "[X] Turn off Gas" appears. Press it: the flame goes out, the alert board lists it, sabotages = 1.</li>
+  <li>The chef grabs the valve: flame back, alert cleared. Try sabotaging again immediately: no prompt for 5 s.</li>
+  <li>Knock the hat (climb a counter): the chef's view goes black until they grab the hat.</li>
+  <li>Cook and serve 3 dishes: "Dinner is served! Chef wins." Or let the clock run out.</li>
+</ol>
+<p>When it all works: <code>git commit -am "Local couch game" &amp;&amp; git tag v0.1-local</code>. That tag is your safe point before Part 2 changes things.</p>
+<div class="note why"><span class="tag">Why · a playable vertical slice first</span><p>You now have the whole game loop working end to end, ugly but complete. Studios call this a vertical slice. Networking it next means converting something you already know works, so any bug you hit in Part 2 is a networking bug.</p></div>
+</section>

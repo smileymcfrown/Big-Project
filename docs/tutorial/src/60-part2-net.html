@@ -1,0 +1,261 @@
+<div class="part-break">Part 2 · Networked with Netcode for GameObjects<span>Chapters 12–17 · the chef hosts, dumplings join over LAN or the internet</span></div>
+
+<section class="chapter" id="ch12">
+<div class="ticket"><div class="num">12</div><div><div class="meta">Concepts · 25 min read</div><h2>Networking concepts</h2></div></div>
+<p>You used Mirror in 2022, so most of this will feel familiar. Netcode for GameObjects (NGO) uses the same model; the names are different.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Idea</th><th>Mirror (2022)</th><th>NGO 2.x</th></tr></thead>
+<tbody>
+<tr><td>Networked object</td><td><code>NetworkIdentity</code></td><td><code>NetworkObject</code></td></tr>
+<tr><td>Networked script</td><td><code>NetworkBehaviour</code></td><td><code>NetworkBehaviour</code></td></tr>
+<tr><td>Replicated state</td><td><code>[SyncVar(hook = ...)]</code></td><td><code>NetworkVariable&lt;T&gt;</code> + <code>OnValueChanged</code></td></tr>
+<tr><td>Client → server call</td><td><code>[Command] CmdX()</code></td><td><code>[Rpc(SendTo.Server)] XRpc()</code></td></tr>
+<tr><td>Server → clients call</td><td><code>[ClientRpc] RpcX()</code></td><td><code>[Rpc(SendTo.Everyone)]</code> (or <code>NotServer</code>, <code>Owner</code>...)</td></tr>
+<tr><td>"Is this mine?"</td><td><code>hasAuthority</code> / <code>isLocalPlayer</code></td><td><code>IsOwner</code> / <code>IsLocalPlayer</code></td></tr>
+<tr><td>Startup hook</td><td><code>OnStartAuthority</code>, <code>OnStartClient</code></td><td><code>OnNetworkSpawn()</code> (check <code>IsOwner</code>, <code>IsServer</code> inside)</td></tr>
+<tr><td>Scene changes</td><td><code>ServerChangeScene</code></td><td><code>NetworkManager.SceneManager.LoadScene</code></td></tr>
+<tr><td>Spawning a player</td><td><code>NetworkServer.AddPlayerForConnection</code></td><td><code>NetworkObject.SpawnAsPlayerObject(clientId)</code></td></tr>
+</tbody></table></div>
+
+<h3>Four rules for this game</h3>
+<ol>
+  <li><strong>The server decides.</strong> Whether a sabotage happened, whether food is cooked, what time it is: one machine owns each truth, and everyone else is told.</li>
+  <li><strong>State goes in NetworkVariables, events go in RPCs.</strong> "The gas is off" is <em>state</em>: someone joining late must see it. "Play the ding sound" is an <em>event</em>: it only matters now.</li>
+  <li><strong>Never trust the client.</strong> A request from a dumpling is a <em>request</em>. The server re-checks everything (is the round on, are you close enough, is it already broken?) before acting.</li>
+  <li><strong>Send the least you can.</strong> Send "the round ends at server time 812.4" once, not "4:59, 4:58..." every frame. Send "cooked", not the heat value.</li>
+</ol>
+
+<h3>Who hosts? The chef.</h3>
+<p>A <strong>host</strong> is a server that's also a player. We make the chef's PC the host, every time.</p>
+<ul>
+  <li>The chef grabs pots, stirs, throws things. On the host, all that physics is local, so it feels instant in VR. Lag in VR is nauseating; lag for a dumpling just feels a bit floaty.</li>
+  <li>Kitchen props are owned by the server, which is the chef, so grabbing them never needs an ownership hand-over.</li>
+  <li>Dumplings move their own bodies (owner authority) for responsive controls, and send <em>requests</em> to sabotage things.</li>
+</ul>
+<figure class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  participant D as Dumpling PC (client)
+  participant H as Chef PC (host = server)
+  participant O as Other dumplings
+  D->>D: press E near gas valve
+  D->>H: RequestSabotageRpc()
+  H->>H: CanInteract? IsInReach? (validate)
+  H->>H: OnSabotagedBy (one-off physics)
+  H->>H: _isSabotaged.Value = true
+  H-->>D: NetworkVariable change
+  H-->>O: NetworkVariable change
+  Note over H,O: every machine runs OnSabotaged(): flame off, alert shown
+</pre>
+<figcaption>The life of one sabotage in Part 2.</figcaption>
+</figure>
+<div class="note review"><span class="tag">Review D21, D22, D23</span><p>Chef always hosts; dumpling movement is owner-authoritative; every request is validated on the server. The cost: if the chef quits, the game ends (no host migration). That's normal for this kind of game.</p></div>
+</section>
+
+<section class="chapter" id="ch13">
+<div class="ticket"><div class="num">13</div><div><div class="meta">Setup · 1 hour</div><h2>Packages, scenes and the NetworkManager</h2></div></div>
+<ol class="steps">
+  <li>Make a branch: <code>git switch -c networked</code>.</li>
+  <li>Package Manager > Unity Registry, install:
+    <ul>
+      <li><strong>Netcode for GameObjects</strong>, version <strong>2.13.x</strong>. If the Package Manager offers 3.x, pick 2.13 from the version list: 3.x needs Unity 6.7.</li>
+      <li><strong>Multiplayer Play Mode</strong> (2.0.x): run up to 4 players inside the editor.</li>
+      <li><strong>Multiplayer Services</strong> (2.4.x): Relay join codes for internet play (Chapter 17).</li>
+      <li><strong>Multiplayer Tools</strong>: the network profiler and the Network Simulator used in Chapter 17.</li>
+    </ul></li>
+  <li>Replace <span class="path">Scripts/DumplingKitchen.Runtime.asmdef</span> with the Part 2 version below. It adds the Netcode, XR Management and Services assemblies.</li>
+  <li>Project Settings > XR Plug-in Management: <strong>untick "Initialize XR on Startup"</strong>. Only the chef starts VR, from code.</li>
+</ol>
+<!--@code part2 Scripts/DumplingKitchen.Runtime.asmdef json-->
+<div class="note review"><span class="tag">Review D24, D25</span><p>Part 2 <em>converts</em> the project. The local version lives on at the <code>v0.1-local</code> tag. And XR now starts only for the chef, so dumpling PCs never need a headset or launch SteamVR.</p></div>
+
+<h3>Three scenes</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Scene</th><th>Contains</th><th>Loaded</th></tr></thead>
+<tbody>
+<tr><td><code>Bootstrap</code></td><td>NetworkManager (+ Unity Transport, ConnectionManager, SessionConnector). Nothing else</td><td>Once, at launch. Never again</td></tr>
+<tr><td><code>Menu</code></td><td>Camera, Canvas with <code>ConnectionMenu</code></td><td>By ConnectionManager after Bootstrap, and after leaving a game</td></tr>
+<tr><td><code>Kitchen</code></td><td>The game from Part 1, now with NetworkObjects</td><td>By the host through NGO; clients follow automatically</td></tr>
+</tbody></table></div>
+<p>File > Build Profiles (Unity 6's replacement for Build Settings) > Scene List: Bootstrap, Menu, Kitchen, in that order.</p>
+<div class="note gotcha"><span class="tag">Gotcha · never reload the NetworkManager's scene</span><p>NGO marks the NetworkManager <code>DontDestroyOnLoad</code>. Load its scene again and you have two, and NGO complains loudly. That's why Bootstrap exists only to hold it and immediately loads Menu.</p></div>
+<p>Pressing Play in the Kitchen scene now does nothing useful (there's no NetworkManager). This editor script makes Play always start from Bootstrap. It goes in its own editor-only assembly:</p>
+<!--@code part2 Editor/DumplingKitchen.Editor.asmdef json-->
+<!--@code part2 Editor/PlayFromBootstrap.cs-->
+
+<h3>Configure the NetworkManager</h3>
+<ol class="steps">
+  <li>In Bootstrap, create <code>NetworkManager</code>: add <strong>NetworkManager</strong>, and when it asks for a transport choose <strong>Unity Transport</strong>.</li>
+  <li><strong>Player Prefab</strong>: leave empty (we spawn players ourselves). <strong>Connection Approval</strong>: on. <strong>Enable Scene Management</strong>: on.</li>
+  <li>Create a <em>Network Prefabs List</em> asset (Create > Netcode > Network Prefabs List) and assign it. You'll add prefabs to it in the next chapters.</li>
+  <li>Add <code>ConnectionManager</code> and <code>SessionConnector</code> (next chapter) to the same object.</li>
+</ol>
+</section>
+
+<section class="chapter" id="ch14">
+<div class="ticket"><div class="num">14</div><div><div class="meta">Networking · 1.5 hours</div><h2>Host as chef, join as dumpling</h2></div></div>
+<p>First, a tiny helper used by several scripts: "should this machine run the game rules?"</p>
+<!--@code part2 Scripts/Net/Authority.cs-->
+<p>Starting VR only for the chef:</p>
+<!--@code part2 Scripts/Net/XRStartup.cs-->
+<p>Internet play through Relay. The Sessions API starts the NetworkManager for you (it calls <code>StartHost</code>/<code>StartClient</code> internally):</p>
+<!--@code part2 Scripts/Net/SessionConnector.cs-->
+<p>And the class that owns "how do we connect", including the server-side gatekeeper:</p>
+<!--@code part2 Scripts/Net/ConnectionManager.cs-->
+<div class="note why"><span class="tag">Why · connection approval</span><p><code>ApproveConnection</code> runs on the server for every incoming player, including the host itself. It's the one place that enforces "max 4 dumplings" and "no joining mid-round", and it tells rejected players why via <code>response.Reason</code> (shown as <code>DisconnectReason</code> on their side). Setting <code>CreatePlayerObject = false</code> means we choose the right prefab per player ourselves.</p></div>
+<div class="note thennow"><span class="tag">Then → now</span><p>Big-Project's <code>OnServerConnect</code> rejected players by comparing the active scene name to a string, and the scene was later renamed, which broke the lobby. Here, approval checks game state (<code>RoundManager.Instance.Phase</code>), not scene names, and scene names live in one serialized field.</p></div>
+<p>The menu UI is deliberately dumb: buttons in, status text out.</p>
+<!--@code part2 Scripts/Net/ConnectionMenu.cs-->
+<ol class="steps">
+  <li>Build the Menu scene: a Canvas with an IP field (placeholder "127.0.0.1"), a join-code field, four buttons (<em>Host as Chef</em>, <em>Join as Dumpling</em>, <em>Host Online</em>, <em>Join Online</em>) and a status text. Add <code>ConnectionMenu</code> and wire them.</li>
+  <li>In the Kitchen scene, add a world-space text on the order board with <code>JoinCodeDisplay</code> so the chef can read the online join code out loud from inside the headset.</li>
+</ol>
+<!--@code part2 Scripts/Net/JoinCodeDisplay.cs-->
+<div class="note review"><span class="tag">Review D26, D27, D28</span><p>LAN via IP on port 7777 plus online via Relay; Bootstrap → Menu → Kitchen; joins refused during a round; max 4 dumplings.</p></div>
+</section>
+
+<section class="chapter" id="ch15">
+<div class="ticket"><div class="num">15</div><div><div class="meta">Networking · 2 hours</div><h2>Spawning the chef avatar and the dumplings</h2></div></div>
+<p>In Part 1 there was one chef rig and local dumplings. Now every machine needs to <em>see</em> everyone, but only the right machine should <em>control</em> each thing.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Thing</th><th>Exists on</th><th>Owned by</th><th>Movement synced by</th></tr></thead>
+<tbody>
+<tr><td>XR Origin (the real VR rig)</td><td>Chef PC only</td><td>n/a (not networked)</td><td>n/a</td></tr>
+<tr><td>ChefAvatar (head, hat, hands)</td><td>Everyone</td><td>Server (= chef)</td><td>NetworkTransform per part, Authority Mode <strong>Server</strong></td></tr>
+<tr><td>Dumpling</td><td>Everyone</td><td>That dumpling's player</td><td>NetworkTransform, Authority Mode <strong>Owner</strong>, + NetworkRigidbody</td></tr>
+<tr><td>Kitchen props, ingredients</td><td>Everyone</td><td>Server</td><td>NetworkTransform (Server) + NetworkRigidbody</td></tr>
+</tbody></table></div>
+
+<h3>The chef</h3>
+<!--@code part2 Scripts/Chef/ChefRigAnchors.cs-->
+<!--@code part2 Scripts/Net/ChefAvatar.cs-->
+<div class="tree">ChefAvatar.prefab        <span class="c">NetworkObject · ChefAvatar</span>
+├─ Head                 <span class="c">NetworkTransform (Authority Mode: Server) · head mesh</span>
+│  └─ Hat               <span class="c">hat mesh · collider on Sabotage layer · ChefHat · XR Simple Interactable · ChefRestoreHandle</span>
+├─ LeftHand             <span class="c">NetworkTransform (Server) · glove mesh</span>
+└─ RightHand            <span class="c">NetworkTransform (Server) · glove mesh</span></div>
+<ol class="steps">
+  <li>Build the prefab above. Assign <code>Head</code>, <code>LeftHand</code>, <code>RightHand</code>, and put the head and hat renderers in <em>Hidden From Chef</em>.</li>
+  <li>Move the hat from Part 1's XR camera to this prefab. The blindfold and <code>ChefVisionBlocker</code> stay on the XR camera; they react to the static event, so they don't care where the hat lives.</li>
+  <li>On the XR Origin in Kitchen, add <code>ChefRigAnchors</code> and assign the Main Camera and the two controller transforms.</li>
+  <li>Add the prefab to the Network Prefabs List.</li>
+</ol>
+<div class="note thennow"><span class="tag">Then → now</span><p>This is the 2022 asymmetric template's idea (<code>OculusPlayer</code> + <code>SendTransform</code> copying head and hands onto networked objects) done with clearer ownership: one avatar owns its three parts, and the anchors are read-only.</p></div>
+
+<h3>The dumplings</h3>
+<!--@code part2 Scripts/Net/NetworkDumpling.cs-->
+<ol class="steps">
+  <li>Right-click the Dumpling prefab > Create > <strong>Prefab Variant</strong>, name it <code>Dumpling_Net</code>.</li>
+  <li>On the variant add <strong>NetworkObject</strong>, <strong>NetworkTransform</strong> (Authority Mode: <strong>Owner</strong>), <strong>NetworkRigidbody</strong> and <code>NetworkDumpling</code>.</li>
+  <li><strong>Disable</strong> (untick) in the variant: <code>PlayerInput</code>, <code>PlayerDumplingInput</code>, <code>DumplingMotor</code>, <code>DumplingInteractor</code>; and deactivate the <code>CameraRig</code> and <code>PromptCanvas</code> children. List them in <code>NetworkDumpling</code>'s owner-only fields.</li>
+  <li>Add an <strong>AudioListener</strong> to the variant's camera. In Part 2 each dumpling PC needs its own, and it's only active for the owner.</li>
+  <li>Add <code>Dumpling_Net</code> to the Network Prefabs List.</li>
+</ol>
+<div class="note why"><span class="tag">Why · disabled by default, enabled for the owner</span><p>Every PC creates a copy of every dumpling. If <code>PlayerInput</code> were enabled in the prefab, each copy would grab the local keyboard the moment it spawned, for one frame, before being switched off. Starting disabled and turning on only what the owner needs avoids a whole class of "why did my input go to the wrong dumpling" bugs.</p></div>
+
+<h3>The spawner</h3>
+<!--@code part2 Scripts/Net/KitchenSpawner.cs-->
+<ol class="steps">
+  <li>In Kitchen, add <code>--- Systems --- / KitchenSpawner</code> with a <strong>NetworkObject</strong> and <code>KitchenSpawner</code>. Assign both prefabs and the spawn points.</li>
+  <li>Delete the Part 1 <code>DumplingJoiner</code> object (Player Input Manager, <code>LocalPlayerJoiner</code>, <code>DesktopViewSetup</code>). Keep the lobby camera for dumpling PCs to look through before their dumpling spawns.</li>
+</ol>
+<div class="note gotcha"><span class="tag">Gotcha · spawn after the client has loaded</span><p>A client that connects has to load the Kitchen scene before its dumpling can appear. <code>OnSynchronizeComplete</code> fires on the server exactly when that's done, which is why the spawner listens to it instead of <code>OnClientConnectedCallback</code>.</p></div>
+</section>
+
+<section class="chapter" id="ch16">
+<div class="ticket"><div class="num">16</div><div><div class="meta">Networking · 2 hours</div><h2>Networking the game rules</h2></div></div>
+<p>Here's where the Part 1 architecture pays back. Only <strong>five</strong> gameplay files change, and the UI, the dumpling code and all five sabotage subclasses stay exactly as they were.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>File</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>RoundManager</code></td><td>State → NetworkVariables; timer → one "phase ends at" server time</td></tr>
+<tr><td><code>SabotageTarget</code></td><td>State → NetworkVariable; <code>Interact</code> → server RPC with validation</td></tr>
+<tr><td><code>Ingredient</code></td><td>Cook state → NetworkVariable; heat counted on the server only</td></tr>
+<tr><td><code>ServingCounter</code></td><td>Menu index → NetworkVariable; serving is server-only; <code>Despawn</code> instead of <code>Destroy</code></td></tr>
+<tr><td><code>HeatZone</code></td><td>One line: only the authority cooks</td></tr>
+<tr><td>Everything else</td><td>Unchanged</td></tr>
+</tbody></table></div>
+
+<h3>RoundManager</h3>
+<!--@code part2 Scripts/Game/RoundManager.cs-->
+<div class="note why"><span class="tag">Why · same public API</span><p>Compare it with Part 1: <code>Phase</code>, <code>SecondsRemaining</code>, <code>PhaseChanged</code>, <code>ScoreChanged</code>, <code>StartRound()</code> and the <code>Report...</code> methods have the same names and meanings. <code>RoundDisplay</code> doesn't know or care that the numbers now come over the network. Designing the public surface first, then changing what's behind it, is how you keep big changes small.</p></div>
+<div class="note gotcha"><span class="tag">Gotcha · NetworkBehaviour already has OnDestroy</span><p><code>NetworkBehaviour</code> defines <code>public virtual void OnDestroy()</code>. Override it and call <code>base.OnDestroy()</code>, or NGO's own clean-up won't run.</p></div>
+
+<h3>SabotageTarget (and why the subclasses don't change)</h3>
+<!--@code part2 Scripts/Sabotage/SabotageTarget.cs-->
+<p>In Part 1 we split each sabotage into a one-off effect (<code>OnSabotagedBy</code>) and state presentation (<code>OnSabotaged</code>/<code>OnRestored</code>). The networked base runs the one-off effect on the server only, and runs the state presentation on every machine when the NetworkVariable changes. <code>GasValve</code>, <code>LightSwitch</code>, <code>PowerPlug</code>, <code>Knockable</code> and <code>ChefHat</code> compile and work unchanged. Each sabotage target in the scene needs a <strong>NetworkObject</strong> on it or a parent.</p>
+
+<h3>Cooking</h3>
+<!--@code part2 Scripts/Cooking/Ingredient.cs-->
+<!--@code part2 Scripts/Cooking/HeatZone.cs-->
+<!--@code part2 Scripts/Cooking/ServingCounter.cs-->
+<ol class="steps">
+  <li>Make <code>_Net</code> prefab variants of every ingredient and grabbable prop: + NetworkObject, NetworkTransform (Server), NetworkRigidbody. Add them to the Network Prefabs List.</li>
+  <li>Swap the scene's props for the <code>_Net</code> variants. In-scene NetworkObjects are spawned automatically when the host loads the scene.</li>
+  <li>Give <code>ServingCounter</code> and <code>RoundManager</code> a NetworkObject each.</li>
+</ol>
+<div class="note gotcha"><span class="tag">Gotcha · one NetworkObject per thing</span><p>Don't nest a NetworkObject inside another one in a prefab. A pot is one NetworkObject; its child trigger is just a child. If the chef needs to carry a NetworkObject that sits inside another (food in a pot), that's fine at runtime because they're separate objects moving with physics.</p></div>
+</section>
+
+<section class="chapter" id="ch17">
+<div class="ticket"><div class="num">17</div><div><div class="meta">Testing · 1.5 hours</div><h2>Test locally, then play online</h2></div></div>
+
+<h3>Multiplayer Play Mode: four players in one editor</h3>
+<ol class="steps">
+  <li>Window > Multiplayer > <strong>Multiplayer Play Mode</strong>. Activate <em>Player 2</em> and <em>Player 3</em>. Each becomes a separate virtual editor window running the same project.</li>
+  <li>Press Play. In the <strong>main editor</strong> (where the headset is), click <em>Host as Chef</em>. VR starts and the Kitchen loads.</li>
+  <li>In each virtual player, leave the IP as 127.0.0.1 and click <em>Join as Dumpling</em>. A dumpling appears for each; the chef sees them in the headset.</li>
+  <li>Run the Chapter 11 checklist again, but across windows.</li>
+</ol>
+<div class="note why"><span class="tag">Why · test with fake lag</span><p>On one machine everything is instant, which hides bugs. Add a <strong>Network Simulator</strong> component (from Multiplayer Tools) to the NetworkManager and pick a preset with around 100 ms delay and a little packet loss. If the game still feels right, it'll feel right over the internet. (Unity Transport's old <em>Debug Simulator</em> fields are obsolete and do nothing in NGO 2.13.)</p></div>
+
+<h3>Two PCs on the same network</h3>
+<ol class="steps">
+  <li>File > Build Profiles > Windows > Build. The same build works for chef and dumplings.</li>
+  <li>On the chef's PC: run it, <em>Host as Chef</em>. Allow it through Windows Firewall when asked (Private networks).</li>
+  <li>Find the chef PC's IPv4 address (<code>ipconfig</code>). On the other PC: type it, <em>Join as Dumpling</em>.</li>
+</ol>
+
+<h3>Online with Relay</h3>
+<ol class="steps">
+  <li>Edit > Project Settings > <strong>Services</strong>: link the project to a Unity Cloud project (create one if needed).</li>
+  <li>In the Unity Cloud dashboard, enable <strong>Relay</strong> for the project (there's a free tier).</li>
+  <li>Chef: <em>Host Online</em>. The join code appears on the kitchen's order board.</li>
+  <li>Dumplings: type the code, <em>Join Online</em>. No port forwarding needed.</li>
+</ol>
+<div class="note gotcha"><span class="tag">Gotcha · services sign-in in virtual players</span><p>Anonymous sign-in stores a player ID per install. Multiplayer Play Mode's virtual players handle this for you; if two built copies on the same PC fight over one identity, test Relay from separate PCs or user accounts.</p></div>
+</section>
+
+<section class="chapter" id="ch18">
+<div class="ticket"><div class="num">18</div><div><div class="meta">Next steps</div><h2>Where next</h2></div></div>
+<p>You have a complete, cleanly structured asymmetric VR/PC game. Here's where to take it, roughly in order of fun per hour.</p>
+<h3>Game design knobs (no new code)</h3>
+<ul>
+  <li><code>GameConfig</code>: round length, dishes to win, player counts.</li>
+  <li><code>IngredientDefinition</code>: cook and burn times per ingredient.</li>
+  <li><code>RecipeDefinition</code>: what each dish needs, how many dishes are on the menu.</li>
+  <li>Each sabotage target's re-arm time, and the dumpling's reach.</li>
+</ul>
+<h3>Small features that teach a lot</h3>
+<ul>
+  <li><strong>Haptics</strong> when something is sabotaged: XRI interactors can send haptic impulses to the chef's controllers.</li>
+  <li><strong>The chef grabs and throws dumplings</strong> (Kieran's throw experiment): an XR Grab Interactable on the dumpling. In Part 2 the dumpling is client-owned, so ask the server to take temporary ownership first. A good ownership exercise.</li>
+  <li><strong>Chopping</strong>: revive <code>Cut.cs</code> as a <code>ChoppingBoard</code> that turns a whole cucumber into slices.</li>
+  <li><strong>Dumpling selection</strong> (Lara's <code>DumplingSelection</code>): a NetworkVariable on <code>NetworkDumpling</code> for the chosen model.</li>
+  <li><strong>Sound and juice</strong>: an audio manager listening to the static sabotage events.</li>
+</ul>
+<h3>Engineering habits to add next</h3>
+<ul>
+  <li><strong>Profile in VR early</strong>: Window > Analysis > Profiler while playing in the headset. Aim for a steady 72/90 fps on the Quest 2 refresh rate you use.</li>
+  <li><strong>Object pooling</strong> for anything spawned often (ingredients from a crate dispenser).</li>
+  <li><strong>PlayMode tests</strong> for interactions (spawn a pot, a stove, wait, assert cooked).</li>
+  <li><strong>Continuous integration</strong>: GameCI on GitHub Actions can run your tests and make builds on every push.</li>
+</ul>
+<h3>Bigger steps</h3>
+<ul>
+  <li><strong>Mixed mode</strong>: let a hosted game also accept couch dumplings on the chef's PC, as server-owned dumplings driven by local <code>PlayerInput</code>s. <code>IDumplingInput</code> already makes this possible; the work is in <code>NetworkDumpling</code>'s "who controls this?" check.</li>
+  <li><strong>Standalone Quest build</strong> (Android): add the Meta OpenXR feature group, then the chef can host from the headset with no PC.</li>
+  <li><strong>Unity 6.7 LTS + NGO 3</strong> when it ships.</li>
+</ul>
+<div class="note review"><span class="tag">Review D29</span><p>Not covered: host migration, reconnecting after a drop, voice chat, and cheat protection beyond the server's checks.</p></div>
+</section>

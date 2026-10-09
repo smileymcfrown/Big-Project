@@ -1,0 +1,86 @@
+<div class="page">
+<nav class="rail" aria-label="Chapters">
+  <details id="rail-details" open>
+    <summary>Chapters <span class="progress" id="progress">0 / 18 done</span></summary>
+    <div class="part-label">Part 1 · Local couch game</div>
+    <ol>
+      <li><input type="checkbox" id="done-ch1" data-ch="ch1" aria-label="Mark chapter 1 done"><a href="#ch1"><span class="n">01</span>What changed since 2022</a></li>
+      <li><input type="checkbox" id="done-ch2" data-ch="ch2" aria-label="Mark chapter 2 done"><a href="#ch2"><span class="n">02</span>Install Unity, create the project</a></li>
+      <li><input type="checkbox" id="done-ch3" data-ch="ch3" aria-label="Mark chapter 3 done"><a href="#ch3"><span class="n">03</span>Git, folders, assemblies, code style</a></li>
+      <li><input type="checkbox" id="done-ch4" data-ch="ch4" aria-label="Mark chapter 4 done"><a href="#ch4"><span class="n">04</span>VR: Quest 2 via Link and SteamVR</a></li>
+      <li><input type="checkbox" id="done-ch5" data-ch="ch5" aria-label="Mark chapter 5 done"><a href="#ch5"><span class="n">05</span>Bring the old art home</a></li>
+      <li><input type="checkbox" id="done-ch6" data-ch="ch6" aria-label="Mark chapter 6 done"><a href="#ch6"><span class="n">06</span>Architecture: how the pieces talk</a></li>
+      <li><input type="checkbox" id="done-ch7" data-ch="ch7" aria-label="Mark chapter 7 done"><a href="#ch7"><span class="n">07</span>The round: timer and state machine</a></li>
+      <li><input type="checkbox" id="done-ch8" data-ch="ch8" aria-label="Mark chapter 8 done"><a href="#ch8"><span class="n">08</span>The chef: cooking</a></li>
+      <li><input type="checkbox" id="done-ch9" data-ch="ch9" aria-label="Mark chapter 9 done"><a href="#ch9"><span class="n">09</span>The dumplings: input, motor, camera</a></li>
+      <li><input type="checkbox" id="done-ch10" data-ch="ch10" aria-label="Mark chapter 10 done"><a href="#ch10"><span class="n">10</span>Sabotage: the OOP showcase</a></li>
+      <li><input type="checkbox" id="done-ch11" data-ch="ch11" aria-label="Mark chapter 11 done"><a href="#ch11"><span class="n">11</span>Couch play on one PC</a></li>
+    </ol>
+    <div class="part-label">Part 2 · Networked</div>
+    <ol>
+      <li><input type="checkbox" id="done-ch12" data-ch="ch12" aria-label="Mark chapter 12 done"><a href="#ch12"><span class="n">12</span>Networking concepts</a></li>
+      <li><input type="checkbox" id="done-ch13" data-ch="ch13" aria-label="Mark chapter 13 done"><a href="#ch13"><span class="n">13</span>Packages, scenes, NetworkManager</a></li>
+      <li><input type="checkbox" id="done-ch14" data-ch="ch14" aria-label="Mark chapter 14 done"><a href="#ch14"><span class="n">14</span>Host as chef, join as dumpling</a></li>
+      <li><input type="checkbox" id="done-ch15" data-ch="ch15" aria-label="Mark chapter 15 done"><a href="#ch15"><span class="n">15</span>Spawning chef and dumplings</a></li>
+      <li><input type="checkbox" id="done-ch16" data-ch="ch16" aria-label="Mark chapter 16 done"><a href="#ch16"><span class="n">16</span>Networking the game rules</a></li>
+      <li><input type="checkbox" id="done-ch17" data-ch="ch17" aria-label="Mark chapter 17 done"><a href="#ch17"><span class="n">17</span>Test, then play online</a></li>
+      <li><input type="checkbox" id="done-ch18" data-ch="ch18" aria-label="Mark chapter 18 done"><a href="#ch18"><span class="n">18</span>Where next</a></li>
+    </ol>
+    <div class="part-label">Reference</div>
+    <ol>
+      <li><span></span><a href="#appendix-a"><span class="n">A</span>Script index</a></li>
+      <li><span></span><a href="#appendix-b"><span class="n">B</span>Unity 2021 → 6 cheat sheet</a></li>
+      <li><span></span><a href="#appendix-c"><span class="n">C</span>Decisions to review</a></li>
+      <li><span></span><a href="#appendix-d"><span class="n">D</span>Sources</a></li>
+    </ol>
+    <div class="rail-tools"><button type="button" id="reset-progress">Clear ticks</button></div>
+  </details>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="kicker">Asymmetric VR / PC · Unity 6.3 LTS · October 2026</div>
+  <h1>Dumpling <em>Kitchen</em>, rebuilt properly</h1>
+  <p class="lede">One player is a chef in VR trying to cook dinner in five minutes. Everyone else is a dumpling on a PC, turning off the gas, unplugging the rice cooker, killing the lights and knocking the chef's hat over their eyes. This guide rebuilds it from an empty project, the way a studio would.</p>
+  <ul class="stack" aria-label="Tech stack">
+    <li><b>Unity</b> 6.3 LTS</li>
+    <li><b>URP</b></li>
+    <li><b>OpenXR</b> 1.18</li>
+    <li><b>XR Interaction Toolkit</b> 3.6</li>
+    <li><b>Input System</b> 1.20</li>
+    <li><b>Netcode for GameObjects</b> 2.13</li>
+    <li><b>Multiplayer Services</b> 2.4 (Relay)</li>
+  </ul>
+</header>
+
+<section aria-labelledby="how-to-use">
+<h3 id="how-to-use" style="margin-top:0">How to use this guide</h3>
+<p>It's written for you coming back after four years: you know what a GameObject and a prefab are, you've written C#, and you've used Mirror. It explains <em>why</em> as well as <em>what</em>, because the why is what makes the habits stick.</p>
+<ul>
+  <li><strong>Part 1</strong> builds the whole game as a <strong>couch game on one PC</strong>: the Quest 2 for the chef and split-screen with gamepads/keyboard for the dumplings. No networking yet, so you can focus on clean game code.</li>
+  <li><strong>Part 2</strong> converts it to <strong>networked play with Netcode for GameObjects</strong>: the chef hosts, dumplings join over LAN or the internet.</li>
+  <li>Every script is complete and copy-pasteable. The same files are in the repo under <span class="path">docs/tutorial/code/</span> so you can copy whole folders.</li>
+  <li>Tick chapters off in the sidebar as you go. Ticks are saved in this browser only.</li>
+</ul>
+<p>Four kinds of boxes appear throughout:</p>
+<div class="note why"><span class="tag">Why · best practice</span><p>The industry habit behind a step, and what goes wrong without it.</p></div>
+<div class="note thennow"><span class="tag">Then → now</span><p>How your 2022 code did it, and what changed.</p></div>
+<div class="note gotcha"><span class="tag">Gotcha</span><p>A trap that costs an evening if nobody warns you.</p></div>
+<div class="note review"><span class="tag">Review D#</span><p>A decision I made on your behalf. All of them are listed in <span class="path">docs/DECISIONS-TO-REVIEW.md</span> and Appendix C.</p></div>
+
+<h3>The game you're building</h3>
+<div class="rules">
+  <div><span class="role">VR · 1 player</span><h4>The chef</h4><ul><li>Cook the dish on the order ticket: put ingredients in a pot, put the pot on a heat source, wait until cooked (not burnt).</li><li>Serve: put the cooked ingredients on the serving counter.</li><li>Fix sabotage by grabbing or pressing the broken thing.</li><li>Wins by serving 3 dishes before the timer runs out.</li></ul></div>
+  <div><span class="role">PC · 1–4 players</span><h4>The dumplings</h4><ul><li>Run, jump and climb around the kitchen.</li><li>Walk up to things and press Interact: gas valve, light switch, plugs, pots, the chef's hat.</li><li>Win if the chef hasn't served 3 dishes when time runs out.</li></ul></div>
+  <div><span class="role">Round · 5 minutes</span><h4>The flow</h4><ul><li>Dumplings join. The chef rings the service bell.</li><li>3, 2, 1 countdown, then a 5:00 round.</li><li>Results for 10 seconds, then back to waiting.</li></ul></div>
+</div>
+<p>The details (how many dishes, how long cooking takes, what each sabotage does) are deliberately simple and live in data assets, so you can redesign them without touching the core code.</p>
+
+<h3>What you need</h3>
+<ul>
+  <li>A Windows 10/11 PC with a VR-capable GPU. PC VR through Link is Windows only.</li>
+  <li>Your Quest 2, plus either a USB 3 cable (Link) or 5 GHz Wi-Fi (Air Link). Steam with SteamVR installed if you want the SteamVR route.</li>
+  <li>One or more gamepads (any XInput or PlayStation pad), or just the keyboard and mouse.</li>
+  <li>About 25 GB of free disk space, Git with Git LFS, and a Unity ID.</li>
+</ul>
+</section>

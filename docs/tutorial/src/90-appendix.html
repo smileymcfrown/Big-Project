@@ -1,0 +1,136 @@
+<div class="part-break">Reference<span>Appendices A–D</span></div>
+
+<section class="chapter" id="appendix-a">
+<div class="ticket"><div class="num">A</div><div><div class="meta">Reference</div><h2>Script index</h2></div></div>
+<p>Every script, where it lives and its one job. "P2" means the file is replaced or added in Part 2. Paths are under <span class="path">Assets/_Project/</span>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Script</th><th>Folder</th><th>Part</th><th>Job</th></tr></thead>
+<tbody>
+<tr><td><code>GameConfig</code></td><td>Scripts/Core</td><td>1</td><td>ScriptableObject with every round number</td></tr>
+<tr><td><code>RoundTimer</code></td><td>Scripts/Core</td><td>1</td><td>Plain C# countdown with an <code>Expired</code> event</td></tr>
+<tr><td><code>TriggerTracker&lt;T&gt;</code></td><td>Scripts/Core</td><td>1</td><td>Counts what's inside a trigger, robust to multi-collider objects</td></tr>
+<tr><td><code>CameraUtility</code></td><td>Scripts/Core</td><td>1</td><td>Makes a camera render to the monitor only</td></tr>
+<tr><td><code>GamePhase</code>, <code>Team</code></td><td>Scripts/Game</td><td>1</td><td>Round phases and teams</td></tr>
+<tr><td><code>RoundManager</code></td><td>Scripts/Game</td><td>1, P2</td><td>Round state machine, timer, score</td></tr>
+<tr><td><code>IHeatSource</code></td><td>Scripts/Cooking</td><td>1</td><td>"Can cook things" capability</td></tr>
+<tr><td><code>Stove</code></td><td>Scripts/Cooking</td><td>1</td><td>Gas burner; heats while gas is on</td></tr>
+<tr><td><code>ElectricAppliance</code></td><td>Scripts/Cooking</td><td>1</td><td>Base class for anything that can be unplugged</td></tr>
+<tr><td><code>ElectricHob</code></td><td>Scripts/Cooking</td><td>1</td><td>Electric heat source (hob, rice cooker)</td></tr>
+<tr><td><code>CookingLogic</code>, <code>CookState</code></td><td>Scripts/Cooking</td><td>1</td><td>Pure function: heat → raw/cooked/burnt</td></tr>
+<tr><td><code>IngredientDefinition</code></td><td>Scripts/Cooking</td><td>1</td><td>Data for a kind of ingredient</td></tr>
+<tr><td><code>Ingredient</code></td><td>Scripts/Cooking</td><td>1, P2</td><td>One piece of food and its cook state</td></tr>
+<tr><td><code>CookingVessel</code></td><td>Scripts/Cooking</td><td>1</td><td>Pot/wok; passes heat to its contents</td></tr>
+<tr><td><code>HeatZone</code></td><td>Scripts/Cooking</td><td>1, P2</td><td>Trigger on a burner; heats vessels in it</td></tr>
+<tr><td><code>RecipeDefinition</code></td><td>Scripts/Cooking</td><td>1</td><td>Data for a dish</td></tr>
+<tr><td><code>ServingCounter</code></td><td>Scripts/Cooking</td><td>1, P2</td><td>Current order; serves matching cooked food</td></tr>
+<tr><td><code>ChefRestoreHandle</code></td><td>Scripts/Chef</td><td>1</td><td>XRI select → <code>SabotageTarget.Restore()</code></td></tr>
+<tr><td><code>ChefVisionBlocker</code></td><td>Scripts/Chef</td><td>1</td><td>Shows the blindfold when the hat is knocked</td></tr>
+<tr><td><code>ChefRigAnchors</code></td><td>Scripts/Chef</td><td>P2</td><td>Exposes the tracked head/hands; hides the rig on dumpling PCs</td></tr>
+<tr><td><code>IDumplingInput</code></td><td>Scripts/Dumplings</td><td>1</td><td>What a dumpling wants to do, from any source</td></tr>
+<tr><td><code>PlayerDumplingInput</code></td><td>Scripts/Dumplings</td><td>1</td><td>PlayerInput → IDumplingInput adapter</td></tr>
+<tr><td><code>DumplingMotor</code></td><td>Scripts/Dumplings</td><td>1</td><td>Rigidbody movement and jumping</td></tr>
+<tr><td><code>DumplingCamera</code></td><td>Scripts/Dumplings</td><td>1</td><td>Third-person orbit camera with wall collision</td></tr>
+<tr><td><code>IDumplingInteractable</code></td><td>Scripts/Dumplings</td><td>1</td><td>"A dumpling can press Interact on this"</td></tr>
+<tr><td><code>DumplingInteractor</code></td><td>Scripts/Dumplings</td><td>1</td><td>Finds the nearest interactable, triggers it</td></tr>
+<tr><td><code>DumplingPlayer</code></td><td>Scripts/Dumplings</td><td>1</td><td>Prefab front door: index, colour, camera</td></tr>
+<tr><td><code>SabotageTarget</code></td><td>Scripts/Sabotage</td><td>1, P2</td><td>Base class with the sabotage rules</td></tr>
+<tr><td><code>GasValve</code>, <code>LightSwitch</code>, <code>PowerPlug</code>, <code>Knockable</code>, <code>ChefHat</code></td><td>Scripts/Sabotage</td><td>1</td><td>The five starter sabotages (unchanged in Part 2)</td></tr>
+<tr><td><code>RoundDisplay</code></td><td>Scripts/UI</td><td>1</td><td>Timer, phase message, score</td></tr>
+<tr><td><code>OrderTicketDisplay</code></td><td>Scripts/UI</td><td>1</td><td>Current order</td></tr>
+<tr><td><code>SabotageAlertDisplay</code></td><td>Scripts/UI</td><td>1</td><td>List of broken things for the chef</td></tr>
+<tr><td><code>InteractionPromptDisplay</code></td><td>Scripts/UI</td><td>1</td><td>"[E] Turn off Gas" for one dumpling</td></tr>
+<tr><td><code>LocalPlayerJoiner</code></td><td>Scripts/Local</td><td>1 only</td><td>Couch join: place, colour, count dumplings</td></tr>
+<tr><td><code>DesktopViewSetup</code></td><td>Scripts/Local</td><td>1 only</td><td>Lobby camera and headset mirror on one PC</td></tr>
+<tr><td><code>Authority</code></td><td>Scripts/Net</td><td>P2</td><td>"Should this machine run the rules?"</td></tr>
+<tr><td><code>XRStartup</code></td><td>Scripts/Net</td><td>P2</td><td>Starts/stops VR for the chef only</td></tr>
+<tr><td><code>ConnectionManager</code></td><td>Scripts/Net</td><td>P2</td><td>Host/join (LAN and Relay), approval, leaving</td></tr>
+<tr><td><code>SessionConnector</code></td><td>Scripts/Net</td><td>P2</td><td>Unity Relay via the Sessions API</td></tr>
+<tr><td><code>ConnectionMenu</code></td><td>Scripts/Net</td><td>P2</td><td>Menu UI → ConnectionManager</td></tr>
+<tr><td><code>JoinCodeDisplay</code></td><td>Scripts/Net</td><td>P2</td><td>Shows the Relay code in the kitchen</td></tr>
+<tr><td><code>KitchenSpawner</code></td><td>Scripts/Net</td><td>P2</td><td>Spawns the chef avatar and one dumpling per client</td></tr>
+<tr><td><code>NetworkDumpling</code></td><td>Scripts/Net</td><td>P2</td><td>Owner-only enabling, colour sync</td></tr>
+<tr><td><code>ChefAvatar</code></td><td>Scripts/Net</td><td>P2</td><td>Networked head/hat/hands following the XR rig</td></tr>
+<tr><td><code>PlayFromBootstrap</code></td><td>Editor</td><td>P2</td><td>Play always starts from the Bootstrap scene</td></tr>
+<tr><td><code>RoundTimerTests</code>, <code>CookingLogicTests</code></td><td>Tests/EditMode</td><td>1</td><td>15 unit tests for the pure logic</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="chapter" id="appendix-b">
+<div class="ticket"><div class="num">B</div><div><div class="meta">Reference</div><h2>Unity 2021 → 6 cheat sheet</h2></div></div>
+<div class="table-wrap"><table>
+<thead><tr><th>You remember</th><th>Now</th></tr></thead>
+<tbody>
+<tr><td><code>rigidbody.velocity</code> / <code>drag</code> / <code>angularDrag</code></td><td><code>linearVelocity</code> / <code>linearDamping</code> / <code>angularDamping</code></td></tr>
+<tr><td><code>PhysicMaterial</code></td><td><code>PhysicsMaterial</code></td></tr>
+<tr><td><code>FindObjectOfType&lt;T&gt;()</code></td><td><code>FindFirstObjectByType&lt;T&gt;()</code> or the faster <code>FindAnyObjectByType&lt;T&gt;()</code> (and avoid both in Update)</td></tr>
+<tr><td>File > Build Settings</td><td>File > <strong>Build Profiles</strong></td></tr>
+<tr><td>TextMesh Pro package</td><td>Inside <code>com.unity.ugui</code> 2.0; same <code>TMPro</code> namespace</td></tr>
+<tr><td>Built-in render pipeline</td><td>URP by default; Render Pipeline Converter for old materials</td></tr>
+<tr><td>Old Input Manager (<code>Input.GetKeyDown</code>)</td><td>Input System: <code>InputAction</code>s, <code>PlayerInput</code>, <code>PlayerInputManager</code></td></tr>
+<tr><td>SteamVR plugin, Oculus Integration</td><td>OpenXR + XR Interaction Toolkit 3</td></tr>
+<tr><td>XRI 2 <code>XRDirectInteractor</code> + <code>XRRayInteractor</code></td><td>XRI 3 <code>NearFarInteractor</code> (in the Starter Assets rig); interactables moved to the <code>...Toolkit.Interactables</code> namespace</td></tr>
+<tr><td>Mirror <code>[Command]</code>, <code>[ClientRpc]</code>, <code>[SyncVar]</code></td><td>NGO <code>[Rpc(SendTo.Server)]</code>, <code>[Rpc(SendTo.Everyone)]</code>, <code>NetworkVariable&lt;T&gt;</code></td></tr>
+<tr><td>NGO 1.x <code>[ServerRpc(RequireOwnership = false)]</code></td><td><code>[Rpc(SendTo.Server)]</code> (anyone may call by default; <code>RequireOwnership</code> is obsolete)</td></tr>
+<tr><td>NGO 1.x <code>ClientNetworkTransform</code> sample</td><td>NetworkTransform's <strong>Authority Mode</strong> dropdown (Server / Owner)</td></tr>
+<tr><td>Domain reload on every Play</td><td>Enter Play Mode Settings: reload scene only (reset your statics)</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="chapter" id="appendix-c">
+<div class="ticket"><div class="num">C</div><div><div class="meta">Reference</div><h2>Decisions to review</h2></div></div>
+<p>The full table with reasons and alternatives is in <span class="path">docs/DECISIONS-TO-REVIEW.md</span>. One line each:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>Decision</th></tr></thead>
+<tbody>
+<tr><td>D1</td><td>Rebuild in a new project rather than upgrade</td></tr>
+<tr><td>D2</td><td>Unity 6.3 LTS + NGO 2.13 (not 6.7 beta + NGO 3)</td></tr>
+<tr><td>D3</td><td>Universal 3D template, add XR yourself</td></tr>
+<tr><td>D4</td><td>OpenXR + XRI only; no Meta XR SDK</td></tr>
+<tr><td>D5</td><td>Working title "Dumpling Kitchen", namespace <code>DumplingKitchen</code></td></tr>
+<tr><td>D6</td><td>One runtime assembly + one test assembly</td></tr>
+<tr><td>D7</td><td>300 s rounds, 3 s countdown, 10 s results</td></tr>
+<tr><td>D8</td><td>Chef wins instantly at 3 dishes; otherwise dumplings win at time-up</td></tr>
+<tr><td>D9</td><td>Chef starts the round with a service bell; min 1 dumpling</td></tr>
+<tr><td>D10</td><td>Fix sabotage by grabbing/pressing it; 5 s re-arm</td></tr>
+<tr><td>D11</td><td>Hat knock = blindfold until the chef grabs the hat</td></tr>
+<tr><td>D12</td><td>Serve by putting cooked ingredients on the counter; fixed looping menu; no plates</td></tr>
+<tr><td>D13</td><td>Heat-seconds cooking model</td></tr>
+<tr><td>D14</td><td>Five starter sabotages</td></tr>
+<tr><td>D15</td><td>Small singleton + static events</td></tr>
+<tr><td>D16</td><td>Rigidbody dumplings</td></tr>
+<tr><td>D17</td><td>Custom orbit camera, not Cinemachine</td></tr>
+<tr><td>D18</td><td>Input behind <code>IDumplingInput</code></td></tr>
+<tr><td>D19</td><td>Split-screen, max 4, join with Start/Enter, locked during rounds</td></tr>
+<tr><td>D20</td><td>No headset mirror on the monitor</td></tr>
+<tr><td>D21</td><td>Chef always hosts</td></tr>
+<tr><td>D22</td><td>Owner-authoritative dumpling movement</td></tr>
+<tr><td>D23</td><td>Server validates every sabotage request</td></tr>
+<tr><td>D24</td><td>Part 2 converts the project; local mode kept as a git tag</td></tr>
+<tr><td>D25</td><td>XR starts only for the chef</td></tr>
+<tr><td>D26</td><td>LAN (port 7777) and Relay join codes</td></tr>
+<tr><td>D27</td><td>Bootstrap → Menu → Kitchen, Play-from-Bootstrap helper</td></tr>
+<tr><td>D28</td><td>No joining mid-round; max 4 dumplings</td></tr>
+<tr><td>D29</td><td>Not covered: host migration, reconnects, voice, anti-cheat</td></tr>
+</tbody></table></div>
+<div class="note gotcha"><span class="tag">How this code was checked</span><p>Every script was compiled with a real C# 9 compiler against stubs of the Unity APIs it uses, and the API names were checked against the actual package sources (NGO 2.13.3, XRI 3.6.1, Input System 1.20.1, Multiplayer Services 2.4.0). The 15 unit tests pass. It has <strong>not</strong> been run inside the Unity editor or on a headset, so expect the odd Inspector wiring slip; the checklists are there to catch them.</p></div>
+</section>
+
+<section class="chapter" id="appendix-d">
+<div class="ticket"><div class="num">D</div><div><div class="meta">Reference</div><h2>Sources</h2></div></div>
+<ul>
+  <li><a href="https://unity.com/releases/unity-6">Unity 6 releases</a> and <a href="https://unity.com/releases/unity-6/support">Unity 6 support and LTS schedule</a></li>
+  <li><a href="https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.9/manual/project-configuration.html">OpenXR plugin: project configuration and the Play Mode OpenXR Runtime setting</a></li>
+  <li><a href="https://docs.unity3d.com/Packages/com.unity.xr.meta-openxr@2.3/manual/get-started/link.html">Unity OpenXR: Meta, using Meta Horizon Link</a></li>
+  <li><a href="https://docs.unity3d.com/Packages/com.unity.xr.interaction.toolkit@3.4/changelog/CHANGELOG.html">XR Interaction Toolkit changelog</a></li>
+  <li><a href="https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.11/changelog/CHANGELOG.html">Netcode for GameObjects changelog</a> and <a href="https://docs.unity3d.com/Packages/com.unity.netcode.gameobjects@2.11/manual/components/helper/networktransform.html">NetworkTransform (Authority Mode)</a></li>
+  <li><a href="https://docs.unity.com/en-us/mps-sdk/create-session">Multiplayer Services: create a session</a> and <a href="https://docs.unity.com/en-us/mps-sdk/manage-session-network-connection">network connection management (Relay)</a></li>
+  <li>Unity issue tracker: <a href="https://issuetracker.unity.com/issues/17966/openxr-immediately-exits-play-mode-in-editor-when-using-steamvr-as-openxr-play-mode-runtime-and-vulkan-graphics-api">SteamVR + Vulkan exits Play mode</a>, <a href="https://issuetracker.unity.com/issues/23297/crash-on-openxrloaderbaseinternalpumpmessageloop-or-unityextrequestenableextensionstring-when-entering-play-mode-with-steamvr-runtime-if-meta-compatibility-is-off">SteamVR runtime crash when Meta compatibility is off</a></li>
+  <li>Package versions and APIs were read from the Unity package registry (packages.unity.com) on 9 October 2026.</li>
+</ul>
+</section>
+
+<footer class="end">
+<p>Written for the Dumpling Kitchen rebuild. Companion files in the repo: <span class="path">docs/01-repo-assessment.md</span>, <span class="path">docs/02-upgrade-or-rebuild.md</span>, <span class="path">docs/DECISIONS-TO-REVIEW.md</span>, and every script under <span class="path">docs/tutorial/code/</span>.</p>
+</footer>
+</main>
+</div>

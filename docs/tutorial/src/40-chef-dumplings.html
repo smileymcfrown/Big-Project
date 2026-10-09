@@ -1,0 +1,123 @@
+<section class="chapter" id="ch8">
+<div class="ticket"><div class="num">08</div><div><div class="meta">Chef gameplay · 2 hours</div><h2>The chef: cooking</h2></div></div>
+<p>The cooking loop: <strong>ingredient → pot → heat → cooked → serving counter → dish served</strong>. Each arrow is a different class, and each class only knows its neighbour.</p>
+<figure class="diagram">
+<pre class="mermaid">
+flowchart LR
+  S["Stove or ElectricHob (IHeatSource)"] --> Z[HeatZone]
+  Z -->|ApplyHeat| V[CookingVessel]
+  V -->|AddHeat| I[Ingredient]
+  I -->|uses| L[CookingLogic]
+  I -.->|placed on| C[ServingCounter]
+  C -->|ReportDishServed| R[RoundManager]
+</pre>
+<figcaption>Heat flows left to right. The stove doesn't know pots exist; the pot doesn't know what kind of stove it's on.</figcaption>
+</figure>
+
+<h3>Step 1 · Heat sources: an interface and a base class</h3>
+<!--@code part1 Scripts/Cooking/IHeatSource.cs-->
+<!--@code part1 Scripts/Cooking/Stove.cs-->
+<!--@code part1 Scripts/Cooking/ElectricAppliance.cs-->
+<!--@code part1 Scripts/Cooking/ElectricHob.cs-->
+<div class="note why"><span class="tag">Why · interface AND base class here?</span><p>They answer different questions. <code>ElectricAppliance</code> answers "can it be unplugged?" and shares the power-handling code. <code>IHeatSource</code> answers "can it cook?" A gas stove can cook but can't be unplugged; a radio can be unplugged but can't cook; an electric hob is both. C# only allows one base class but any number of interfaces, which is exactly why capabilities are usually interfaces.</p></div>
+
+<h3>Step 2 · The rules of cooking, as a pure function</h3>
+<!--@code part1 Scripts/Cooking/CookingLogic.cs-->
+<!--@code part1 Tests/EditMode/CookingLogicTests.cs-->
+
+<h3>Step 3 · Ingredients: data vs state</h3>
+<!--@code part1 Scripts/Cooking/IngredientDefinition.cs-->
+<!--@code part1 Scripts/Cooking/Ingredient.cs-->
+<ol class="steps">
+  <li>Create three materials per ingredient (raw, cooked, burnt) by duplicating the extracted material and tinting it. A quick shortcut: one shared "Burnt" material for everything.</li>
+  <li>Create <strong>Ingredient</strong> assets in <span class="path">Settings/Ingredients</span>: Carrot (8 s to cook, 10 s to burn), Onion, Egg, Cucumber...</li>
+  <li>Make an ingredient prefab per model: model + <strong>Rigidbody</strong> (Collision Detection: Continuous Dynamic) + convex <strong>Mesh Collider</strong> or a primitive collider + <strong>XR Grab Interactable</strong> + <strong>Ingredient</strong>.</li>
+</ol>
+<div class="note why"><span class="tag">Why · <code>sharedMaterial</code></span><p>Reading or writing <code>renderer.material</code> silently clones the material for that one object, and those copies are never cleaned up. Swapping between a few shared materials with <code>sharedMaterial</code> creates nothing and keeps the SRP Batcher happy.</p></div>
+
+<h3>Step 4 · Pots and heat zones (and a reusable helper)</h3>
+<p>Both the pot ("which ingredients are inside me?") and the stove ("which pots are on me?") need to track what's inside a trigger. That's one helper class, written once:</p>
+<!--@code part1 Scripts/Core/TriggerTracker.cs-->
+<!--@code part1 Scripts/Cooking/CookingVessel.cs-->
+<!--@code part1 Scripts/Cooking/HeatZone.cs-->
+<div class="tree">Stove                    <span class="c">Stove (+ flame ParticleSystem, burner AudioSource)</span>
+└─ HeatZone              <span class="c">BoxCollider (Is Trigger) a few cm above the burner + HeatZone</span>
+
+Prop_Wok                 <span class="c">Rigidbody, convex colliders, XR Grab Interactable, CookingVessel</span>
+└─ Contents              <span class="c">BoxCollider (Is Trigger) filling the inside of the wok</span></div>
+<div class="note gotcha"><span class="tag">Gotcha · trigger messages go to the Rigidbody</span><p>The <code>Contents</code> trigger is a child, but <code>CookingVessel</code> sits on the wok's root next to the Rigidbody. That works because Unity sends <code>OnTriggerEnter</code> to scripts on the <em>Rigidbody's</em> GameObject for all its child colliders. It also means the vessel hears about its own solid colliders touching the heat zone; <code>TriggerTracker</code> ignores anything that isn't an <code>Ingredient</code>, so that's harmless.</p></div>
+<div class="note gotcha"><span class="tag">Gotcha · food falling out of a carried pot</span><p>On the pot's XR Grab Interactable set <strong>Movement Type</strong> to <em>Velocity Tracking</em>, so it moves with physics instead of teleporting each frame (teleporting pots leave their contents behind). Ingredients need Continuous Dynamic collision detection.</p></div>
+
+<h3>Step 5 · Recipes and the serving counter</h3>
+<!--@code part1 Scripts/Cooking/RecipeDefinition.cs-->
+<!--@code part1 Scripts/Cooking/ServingCounter.cs-->
+<!--@code part1 Scripts/UI/OrderTicketDisplay.cs-->
+<ol class="steps">
+  <li>Create two or three <strong>Recipe</strong> assets ("Stir-fried Veg": carrot + onion; "Egg Fried Rice": egg + onion).</li>
+  <li>Make a ServingCounter: a counter-top mesh with a <strong>BoxCollider (Is Trigger)</strong> covering its top, plus <code>ServingCounter</code> with the menu filled in.</li>
+  <li>Hang an order ticket (world-space canvas + <code>OrderTicketDisplay</code>) above the counter.</li>
+  <li>Playtest: ring the bell (Min Dumplings 0 for now), put a carrot and onion in the wok, put it on the stove, wait, tip them onto the counter. The dish counter on the wall clock should go up.</li>
+</ol>
+<div class="note review"><span class="tag">Review D12, D13</span><p>No plates, fixed menu order, heat-seconds cooking. Easy to extend: a <code>Plate</code> that's itself a <code>TriggerTracker&lt;Ingredient&gt;</code>, random orders, chopping (Lara's <code>Cut.cs</code> cucumber experiment is a good starting point).</p></div>
+</section>
+
+<section class="chapter" id="ch9">
+<div class="ticket"><div class="num">09</div><div><div class="meta">Dumpling gameplay · 2 hours</div><h2>The dumplings: input, motor, camera</h2></div></div>
+
+<h3>Step 1 · The input actions asset</h3>
+<p>Right-click <span class="path">_Project/Input</span> > Create > Input Actions, name it <code>Dumpling</code>, and open it.</p>
+<ol class="steps">
+  <li>Add two <strong>Control Schemes</strong> (top-left dropdown): <code>Keyboard&amp;Mouse</code> (requires Keyboard and Mouse) and <code>Gamepad</code> (requires Gamepad). The first name must match exactly; the code checks it.</li>
+  <li>Add an action map <strong>Dumpling</strong> with these actions:</li>
+</ol>
+<div class="table-wrap"><table>
+<thead><tr><th>Action</th><th>Type</th><th>Keyboard&amp;Mouse</th><th>Gamepad</th></tr></thead>
+<tbody>
+<tr><td><code>Move</code></td><td>Value / Vector2</td><td>WASD (Up/Down/Left/Right Composite)</td><td>Left Stick</td></tr>
+<tr><td><code>Look</code></td><td>Value / Vector2</td><td>Mouse Delta</td><td>Right Stick</td></tr>
+<tr><td><code>Jump</code></td><td>Button</td><td>Space</td><td>Button South (A / Cross)</td></tr>
+<tr><td><code>Interact</code></td><td>Button</td><td>E</td><td>Button West (X / Square)</td></tr>
+</tbody></table></div>
+<ol class="steps" start="3">
+  <li>Add a second action map <strong>Lobby</strong> with one Button action, <code>Join</code>, bound to <kbd>Enter</kbd> and Gamepad <em>Start</em>. Chapter 11 uses it.</li>
+  <li>Tick each binding's control scheme box, then <strong>Save Asset</strong>.</li>
+</ol>
+
+<h3>Step 2 · Input behind an interface</h3>
+<!--@code part1 Scripts/Dumplings/IDumplingInput.cs-->
+<!--@code part1 Scripts/Dumplings/PlayerDumplingInput.cs-->
+<div class="note thennow"><span class="tag">Then → now</span><div class="thennow-grid">
+<div><h5>2022 · DumplingMovementCtrl + PlayerCamCtrl</h5><p>Each script did <code>new Controls()</code>, so movement and camera had separate copies of the actions. Lambdas were subscribed in <code>OnStartAuthority</code> and never unsubscribed. Input reading, Mirror authority and movement were all in one class.</p></div>
+<div><h5>Now · PlayerInput + IDumplingInput</h5><p>One <code>PlayerInput</code> per player owns that player's actions and devices. One adapter class turns it into <code>IDumplingInput</code>. The motor and camera read the interface, so a network- or AI-driven dumpling is just another implementation.</p></div>
+</div></div>
+
+<h3>Step 3 · Movement</h3>
+<!--@code part1 Scripts/Dumplings/DumplingMotor.cs-->
+<div class="note why"><span class="tag">Why · buffer input, act in FixedUpdate</span><p>Input arrives per frame; physics runs at a fixed rate. If you set velocity in <code>Update</code> the movement speed depends on frame rate, and a jump pressed between two physics steps can be lost. So the event just sets <code>_jumpRequested</code>, and <code>FixedUpdate</code> consumes it.</p></div>
+<div class="note review"><span class="tag">Review D16</span><p>Dumplings are Rigidbodies so they can be shoved, knocked over and (one day) grabbed and thrown by the chef, like Kieran's <code>ThrowObject</code> experiment. If you want tight platforming instead, a <code>CharacterController</code> is simpler.</p></div>
+
+<h3>Step 4 · The camera</h3>
+<!--@code part1 Scripts/Core/CameraUtility.cs-->
+<!--@code part1 Scripts/Dumplings/DumplingCamera.cs-->
+<div class="note review"><span class="tag">Review D17</span><p>A small custom orbit camera instead of Cinemachine. In split-screen, Cinemachine 3 needs a separate output channel per player, which is a lot of new concepts on day one. Swapping later only touches this class.</p></div>
+
+<h3>Step 5 · The prefab's front door</h3>
+<!--@code part1 Scripts/Dumplings/DumplingPlayer.cs-->
+
+<h3>Step 6 · Assemble the Dumpling prefab</h3>
+<div class="tree">Dumpling                 <span class="c">layer Dumpling · Rigidbody (Interpolate, Continuous Dynamic) · SphereCollider
+│                        PlayerInput · PlayerDumplingInput · DumplingMotor · DumplingInteractor · DumplingPlayer</span>
+├─ Body                  <span class="c">Dumpling.fbx mesh (pivot at the feet)</span>
+├─ ReachPoint            <span class="c">empty, in front of the dumpling at waist height (DumplingInteractor's reach origin)</span>
+├─ CameraRig             <span class="c">DumplingCamera (target = Dumpling)</span>
+│  └─ Camera             <span class="c">Camera (Culling Mask: everything except ChefOnly) · NO AudioListener</span>
+└─ PromptCanvas          <span class="c">Canvas (Screen Space - Camera, Camera = the camera above) · InteractionPromptDisplay (Chapter 10)</span></div>
+<ol class="steps">
+  <li><strong>PlayerInput</strong>: Actions = <code>Dumpling</code>, Default Map = <code>Dumpling</code>, Behavior = <em>Invoke C Sharp Events</em>, Camera = the child Camera (needed for split-screen).</li>
+  <li><strong>DumplingMotor</strong>: Ground Layers = everything except <code>Dumpling</code>; View Transform = <code>CameraRig</code>.</li>
+  <li>Create a <strong>Physics Material</strong> (Unity 6 calls it <code>PhysicsMaterial</code>) with 0 friction and Friction Combine = Minimum, and put it on the SphereCollider so dumplings don't stick to walls.</li>
+  <li>Drag one Dumpling into the scene and press Play. WASD/mouse or a gamepad should move it around. Delete it from the scene afterwards; Chapter 11 spawns them.</li>
+</ol>
+<div class="note gotcha"><span class="tag">Gotcha · one AudioListener</span><p>Unity wants exactly one <code>AudioListener</code>. In Part 1 it's on the chef's XR camera. Remove it from the dumpling camera or the console fills with warnings when the second dumpling joins.</p></div>
+<div class="note thennow"><span class="tag">Then → now</span><p>The Week 1 prototype already had a <code>Player Low Friction.physicMaterial</code>. Same idea; the type is now called <code>PhysicsMaterial</code>, and <code>Rigidbody.velocity</code> is now <code>linearVelocity</code>.</p></div>
+</section>

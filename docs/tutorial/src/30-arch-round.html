@@ -1,0 +1,154 @@
+<section class="chapter" id="ch6">
+<div class="ticket"><div class="num">06</div><div><div class="meta">Concepts · 20 min read</div><h2>Architecture: how the pieces talk</h2></div></div>
+<p>Before any gameplay code, here's the shape of the whole thing. Every script in this guide follows the same few rules, and knowing them up front makes each chapter read as "another example of the rule" instead of a new idea.</p>
+
+<h3>Five tools, five jobs</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Tool</th><th>Use it for</th><th>In this game</th></tr></thead>
+<tbody>
+<tr><td><strong>Components</strong> (composition)</td><td>Building objects out of small single-purpose behaviours</td><td>A dumpling = <code>DumplingMotor</code> + <code>DumplingCamera</code> + <code>DumplingInteractor</code> + ...</td></tr>
+<tr><td><strong>Inheritance</strong></td><td>A family of things that share rules and differ in details</td><td><code>SabotageTarget</code> → <code>GasValve</code>, <code>LightSwitch</code>, <code>PowerPlug</code>...</td></tr>
+<tr><td><strong>Interfaces</strong></td><td>A capability that unrelated classes can share</td><td><code>IHeatSource</code> (stove and electric hob), <code>IDumplingInteractable</code>, <code>IDumplingInput</code></td></tr>
+<tr><td><strong>ScriptableObjects</strong></td><td>Shared data and tuning, edited as assets</td><td><code>GameConfig</code>, <code>IngredientDefinition</code>, <code>RecipeDefinition</code></td></tr>
+<tr><td><strong>Plain C# classes</strong></td><td>Rules and logic that don't need a GameObject</td><td><code>RoundTimer</code>, <code>CookingLogic</code>, <code>TriggerTracker&lt;T&gt;</code></td></tr>
+</tbody></table></div>
+<div class="note why"><span class="tag">Why · "composition over inheritance", but not "never inheritance"</span><p>Unity is built on composition: a GameObject is a bag of components. Use deep inheritance for GameObjects and you end up with <code>FlyingSwimmingDumpling : SwimmingDumpling : Dumpling</code>. But for a genuine family with shared rules, like every sabotage target, a base class is the right tool: the rules live in one place and each subclass is ten lines.</p></div>
+
+<h3>Which code may know about which</h3>
+<p>Each folder is a module. Arrows mean "uses". They all point towards the stable core and never back, so you can change the UI without touching game rules, and add sabotages without touching dumplings.</p>
+<figure class="diagram">
+<pre class="mermaid">
+flowchart LR
+  UI --> Game
+  UI --> Cooking
+  UI --> Sabotage
+  UI --> Dumplings
+  Chef --> Sabotage
+  Sabotage --> Game
+  Sabotage --> Dumplings
+  Sabotage --> Cooking
+  Cooking --> Game
+  Local --> Dumplings
+  Local --> Game
+  Game --> Core
+  Cooking --> Core
+  Dumplings --> Core
+</pre>
+<figcaption>Module dependencies in Part 1. <code>Core</code> and <code>Game</code> know nothing about dumplings, chefs or stoves.</figcaption>
+</figure>
+
+<h3>Call down, signal up</h3>
+<ul>
+  <li>When a system needs something <strong>done</strong>, it <strong>calls a method</strong> on the thing that owns it: the serving counter calls <code>RoundManager.ReportDishServed()</code>.</li>
+  <li>When a system has <strong>news</strong>, it <strong>raises a C# event</strong> and doesn't care who listens: <code>RoundManager.PhaseChanged</code>, <code>SabotageTarget.AnySabotaged</code>.</li>
+  <li>UI only ever <strong>listens and reads</strong>. It never changes game state.</li>
+</ul>
+<div class="note gotcha"><span class="tag">Gotcha · every += needs a -=</span><p>Subscribe in <code>OnEnable</code> (or <code>Start</code>) and unsubscribe in <code>OnDisable</code> (or <code>OnDestroy</code>). An event holding a reference to a destroyed object throws <code>MissingReferenceException</code> the next time it fires, usually after a scene reload, far from the real bug.</p></div>
+
+<h3>The Unity lifecycle, and what goes where</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Message</th><th>When</th><th>Use it to</th></tr></thead>
+<tbody>
+<tr><td><code>Awake</code></td><td>Object created (even if the component is disabled)</td><td>Cache <em>your own</em> components (<code>GetComponent</code>), set up singletons</td></tr>
+<tr><td><code>OnEnable</code></td><td>Each time the component is enabled</td><td>Subscribe to events</td></tr>
+<tr><td><code>Start</code></td><td>Before the first frame, after <strong>every</strong> object's <code>Awake</code></td><td>Talk to <em>other</em> objects (they're guaranteed to exist now)</td></tr>
+<tr><td><code>FixedUpdate</code></td><td>Each physics step (50/s by default)</td><td>Rigidbody forces and velocities</td></tr>
+<tr><td><code>Update</code></td><td>Each frame</td><td>Input, timers, non-physics logic</td></tr>
+<tr><td><code>LateUpdate</code></td><td>Each frame, after all <code>Update</code>s</td><td>Cameras and anything that follows something else</td></tr>
+<tr><td><code>OnDisable</code> / <code>OnDestroy</code></td><td>Disabled / destroyed</td><td>Unsubscribe, release things</td></tr>
+</tbody></table></div>
+
+<h3>Where every script lives</h3>
+<p>The full index with one line per script is in <a href="#appendix-a">Appendix A</a>. In short:</p>
+<div class="tree">Scripts/
+├─ Core/        <span class="c">GameConfig, RoundTimer, TriggerTracker, CameraUtility (no game knowledge)</span>
+├─ Game/        <span class="c">GamePhase, RoundManager (the rules of a round)</span>
+├─ Cooking/     <span class="c">IHeatSource, Stove, ElectricAppliance, ElectricHob, HeatZone, CookingVessel,
+│               Ingredient, IngredientDefinition, CookingLogic, RecipeDefinition, ServingCounter</span>
+├─ Chef/        <span class="c">ChefRestoreHandle, ChefVisionBlocker (+ ChefRigAnchors in Part 2)</span>
+├─ Dumplings/   <span class="c">IDumplingInput, PlayerDumplingInput, DumplingMotor, DumplingCamera,
+│               IDumplingInteractable, DumplingInteractor, DumplingPlayer</span>
+├─ Sabotage/    <span class="c">SabotageTarget, GasValve, LightSwitch, PowerPlug, Knockable, ChefHat</span>
+├─ UI/          <span class="c">RoundDisplay, OrderTicketDisplay, SabotageAlertDisplay, InteractionPromptDisplay</span>
+├─ Local/       <span class="c">LocalPlayerJoiner, DesktopViewSetup (Part 1 only)</span>
+└─ Net/         <span class="c">Part 2</span></div>
+
+<h3>SOLID, in kitchen terms</h3>
+<ul>
+  <li><strong>Single responsibility:</strong> <code>ChefHat</code> moves the hat; <code>ChefVisionBlocker</code> blinds the chef. Two jobs, two classes.</li>
+  <li><strong>Open/closed:</strong> add a new sabotage by adding a class. Nothing existing changes.</li>
+  <li><strong>Liskov substitution:</strong> the interactor works with <em>any</em> <code>IDumplingInteractable</code>, and any <code>SabotageTarget</code> subclass behaves correctly when treated as the base type.</li>
+  <li><strong>Interface segregation:</strong> <code>IHeatSource</code> has two members. Pots don't need to know a stove has a flame particle.</li>
+  <li><strong>Dependency inversion:</strong> the motor depends on <code>IDumplingInput</code>, not on the keyboard. That's what lets Part 2 swap in network-driven dumplings without touching the motor.</li>
+</ul>
+<div class="note review"><span class="tag">Review D15</span><p>The round is reachable through a small singleton (<code>RoundManager.Instance</code>) and a couple of static events. It's the most readable option for a returning developer. Bigger teams often use ScriptableObject event channels or a dependency-injection container (VContainer, Zenject) instead; the rest of the design doesn't change if you switch.</p></div>
+</section>
+
+<section class="chapter" id="ch7">
+<div class="ticket"><div class="num">07</div><div><div class="meta">Core gameplay · 1.5 hours</div><h2>The round: config, timer, state machine</h2></div></div>
+<p>The heart of any round-based game is a <strong>state machine</strong>: the game is always in exactly one phase, and moves between phases on clear triggers.</p>
+<figure class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> WaitingForPlayers
+  WaitingForPlayers --> Countdown: chef rings the bell, enough dumplings
+  Countdown --> Playing: 3 s
+  Playing --> RoundOver: chef serves 3 dishes
+  Playing --> RoundOver: the 5 minutes run out
+  RoundOver --> WaitingForPlayers: 10 s
+</pre>
+<figcaption>Round phases. Every number on this diagram lives in the <code>GameConfig</code> asset.</figcaption>
+</figure>
+
+<h3>Step 1 · GameConfig: numbers belong in data</h3>
+<!--@code part1 Scripts/Core/GameConfig.cs-->
+<p>Create the asset: right-click <span class="path">_Project/Settings</span> > Create > Dumpling Kitchen > Game Config. Leave the defaults (300 s round) for now.</p>
+<div class="note why"><span class="tag">Why · ScriptableObject config</span><p>No magic numbers in code. You can keep several configs ("GameConfig_Quick" with 60 s rounds for testing) and swap them in the Inspector. Properties are read-only, so nothing can change the rules at runtime by accident.</p></div>
+<div class="note review"><span class="tag">Review D7, D8, D9</span><p>300 s rounds, 3 s countdown, 10 s results, the chef needs <strong>3 dishes</strong> and wins the moment they serve the third, minimum 1 dumpling to start. All tweakable in this asset.</p></div>
+
+<h3>Step 2 · RoundTimer: a plain C# class, with tests</h3>
+<!--@code part1 Scripts/Core/RoundTimer.cs-->
+<p>Because <code>RoundTimer</code> isn't a MonoBehaviour, we can test it in milliseconds without a scene:</p>
+<!--@code part1 Tests/EditMode/RoundTimerTests.cs-->
+<p>Run them: Window > General > <strong>Test Runner</strong> > EditMode > Run All. All green? Good. Break <code>Format</code> on purpose and watch a test fail, so you trust them.</p>
+<div class="note why"><span class="tag">Why · pull logic out of MonoBehaviours</span><p>Testing a MonoBehaviour means building a scene and waiting for frames. Testing a plain class means calling methods. The pattern you'll see repeatedly: <strong>keep MonoBehaviours thin</strong> (Unity glue), and put rules in plain classes or pure functions that are easy to test.</p></div>
+
+<h3>Step 3 · RoundManager: the state machine</h3>
+<!--@code part1 Scripts/Game/GamePhase.cs-->
+<!--@code part1 Scripts/Game/RoundManager.cs-->
+<p>Things to notice:</p>
+<ul>
+  <li>Every phase change goes through <strong>one method</strong>, <code>EnterPhase</code>, which also fires <code>PhaseChanged</code>. There is no other way to change phase, so listeners can never miss one.</li>
+  <li><code>Report...</code> methods <strong>check the phase themselves</strong>. A dish served during the countdown simply doesn't count. Callers don't need to know the rules.</li>
+  <li>The score fields have <code>private set</code>. Only the round can change the score.</li>
+</ul>
+<div class="note why"><span class="tag">Why · an enum + switch is enough (for now)</span><p>With four phases that only differ in "what happens when the timer ends", an enum and a <code>switch</code> is the clearest code. When phases start having lots of their own behaviour (music, camera moves, different rules), refactor to the <em>State pattern</em>: one class per phase with <code>Enter()</code>, <code>Tick()</code>, <code>Exit()</code>.</p></div>
+<div class="note thennow"><span class="tag">Then → now</span><p>Big-Project's <code>CustomNetworkManager</code> did connection handling, lobby rules, readiness, scene changes and player spawning in one class. Here the round rules live in <code>RoundManager</code> and connection handling (Part 2) lives in <code>ConnectionManager</code>. Smaller classes with one reason to change are much easier to come back to after a break.</p></div>
+
+<h3>Step 4 · Show it: RoundDisplay</h3>
+<!--@code part1 Scripts/UI/RoundDisplay.cs-->
+
+<h3>Step 5 · Scene setup</h3>
+<p>Lay out the Kitchen scene's hierarchy with empty "header" objects. Keep them at position 0,0,0 with no components so they're purely organisational:</p>
+<div class="tree">Kitchen
+├─ --- Systems ---
+│  └─ RoundManager          <span class="c">RoundManager (GameConfig assigned)</span>
+├─ --- Chef ---
+│  ├─ XR Origin (XR Rig)    <span class="c">from Chapter 4</span>
+│  └─ XR Interaction Manager
+├─ --- Kitchen ---
+│  ├─ Environment           <span class="c">kitchen shell, counters, floor</span>
+│  └─ ServiceBell           <span class="c">mesh + collider + XR Simple Interactable</span>
+├─ --- UI ---
+│  ├─ XR UI Event System
+│  ├─ DesktopHUD            <span class="c">Canvas (Screen Space - Overlay) + RoundDisplay</span>
+│  └─ WallClock             <span class="c">Canvas (World Space, scale 0.001) + RoundDisplay</span>
+└─ --- Lighting ---</div>
+<ol class="steps">
+  <li>Create the <code>RoundManager</code> object and assign your <code>GameConfig</code>.</li>
+  <li>Create both canvases, each with TextMeshPro texts for timer, phase and score, and a <code>RoundDisplay</code> wired to them. Put the wall clock somewhere the chef can see it above the stove.</li>
+  <li><strong>The service bell:</strong> a small cylinder with a collider and an <strong>XR Simple Interactable</strong>. In the interactable's <em>Interactable Events</em>, add a <em>Select Entered</em> entry, drag in the RoundManager object and pick <code>RoundManager.StartRound</code>.</li>
+  <li>Temporarily set <em>Min Dumplings To Start</em> to <strong>0</strong> in GameConfig, press Play, grab the bell, and watch the countdown and the 5:00 timer run on both canvases. Set it back to 1 afterwards.</li>
+</ol>
+<div class="note why"><span class="tag">Why · a UnityEvent for the bell, C# events in code</span><p>UnityEvents (wired in the Inspector) are great for one-off designer hookups like "this bell starts the round". For code-to-code communication prefer C# events: they're faster, show up in "Find usages", and can't be silently broken by renaming a method.</p></div>
+</section>
