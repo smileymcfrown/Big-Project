@@ -18,6 +18,7 @@ Outputs:
     [2nd argument]                      optional: the quest board as a fragment
 """
 import html
+import json
 import re
 import sys
 from pathlib import Path
@@ -54,11 +55,15 @@ def render_code(match: re.Match) -> str:
     )
 
 
-def build(src: Path, out_name: str, fragment_arg: int, mermaid: bool) -> None:
+def build(src: Path, out_name: str, fragment_arg: int, mermaid: bool, guide_html: str = "") -> str:
     parts = sorted(src.glob("*.html"))
     head = parts[0].read_text(encoding="utf-8")
     body = "\n".join(p.read_text(encoding="utf-8") for p in parts[1:])
     body, count = MARKER.subn(render_code, body)
+    if guide_html:
+        # Embed the finished guide as a JS string; escape sequences that would end the script.
+        literal = json.dumps(guide_html, ensure_ascii=False).replace("</", "<\\/").replace("<!--", "<\\!--")
+        body = body.replace('/*@GUIDE_HTML@*/""', literal)
 
     full = (
         "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
@@ -73,11 +78,12 @@ def build(src: Path, out_name: str, fragment_arg: int, mermaid: bool) -> None:
         fragment = Path(sys.argv[fragment_arg])
         fragment.write_text(f"{head}\n{body}\n", encoding="utf-8")
         print(f"Wrote {fragment}")
+    return full
 
 
 def main() -> None:
-    build(SRC, "dumpling-kitchen-tutorial.html", 1, mermaid=True)
-    build(ROOT / "src-quest", "dumpling-kitchen-quest.html", 2, mermaid=False)
+    guide = build(SRC, "dumpling-kitchen-tutorial.html", 1, mermaid=True)
+    build(ROOT / "src-quest", "dumpling-kitchen-quest.html", 2, mermaid=False, guide_html=guide)
 
 
 if __name__ == "__main__":

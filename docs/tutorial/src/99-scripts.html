@@ -51,6 +51,32 @@
     Array.prototype.forEach.call(document.querySelectorAll('section.chapter'), function (section) { observer.observe(section); });
   }
 
+  // Anchor links scroll in place. This also keeps them working when the guide is
+  // shown inside the quest board's reader panel.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    var target = document.getElementById(a.getAttribute('href').slice(1));
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ block: 'start', behavior: 'instant' });
+  });
+
+  // The quest board asks for a chapter with postMessage({ goto: "ch7" }).
+  window.addEventListener('message', function (e) {
+    var id = e.data && e.data.goto;
+    if (typeof id !== 'string' || !/^[a-z0-9-]+$/.test(id)) return;
+    var target = document.getElementById(id);
+    if (target) target.scrollIntoView({ block: 'start', behavior: 'instant' });
+  });
+
+  // Inside the quest board's reader, Esc asks the board to close the panel.
+  if (window.parent !== window) {
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') window.parent.postMessage({ closeReader: true }, '*');
+    });
+  }
+
   function selectText(el) {
     var range = document.createRange();
     range.selectNodeContents(el);

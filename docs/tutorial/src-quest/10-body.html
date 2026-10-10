@@ -40,7 +40,7 @@
         <div class="actions">
           <button type="button" class="btn primary" id="next-done">Done</button>
           <button type="button" class="btn" id="next-sprint">Start a focus sprint</button>
-          <a class="btn ghost" id="next-open" href="#" target="_blank" rel="noopener">Open chapter</a>
+          <button type="button" class="btn ghost" id="next-open" data-open-ch="1">Open chapter</button>
           <button type="button" class="btn ghost small" id="next-skip">Park it for later</button>
         </div>
         <div class="parked-note" id="next-parked" hidden></div>
@@ -129,8 +129,17 @@
   </div>
 
   <footer class="foot">
-    Progress is saved privately to your account when this page is opened on claude.ai (it syncs between your devices), and in this browser otherwise. Chapter links open the Dumpling Kitchen Build Guide.
+    Progress is saved privately to your account when this page is opened on claude.ai (it syncs between your devices), and in this browser otherwise. The full Dumpling Kitchen Build Guide is built into this page: every "Open chapter" opens it in the reader panel.
   </footer>
+</div>
+
+<div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-labelledby="reader-title">
+  <div class="reader-bar">
+    <span class="eyebrow" id="reader-title">Build guide</span>
+    <span class="reader-hint">Read here, then close to tick it off. Esc also closes.</span>
+    <button type="button" class="btn small" id="reader-close">Close</button>
+  </div>
+  <iframe id="reader-frame" title="Dumpling Kitchen Build Guide"></iframe>
 </div>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -150,9 +159,9 @@
   // ------------------------------------------------------------------
   // Content: 9 services, each 5 hours. Steps mirror the build guide.
   // ------------------------------------------------------------------
-  var GUIDE = location.protocol === "file:"
-    ? "dumpling-kitchen-tutorial.html"
-    : "https://claude.ai/artifact/K3B77TH2PHemDgxFRkTd8i";
+  // The whole build guide ships inside this page and opens in the reader panel,
+  // so chapter links never depend on leaving the page. build.py fills this in.
+  var GUIDE_HTML = /*@GUIDE_HTML@*/"";
 
   var DAYS = [
     { id: "d1", name: "Mise en place", blurb: "Tools installed, project created, VR proven on both runtimes. Boring on purpose: every later day stands on this.",
@@ -583,7 +592,6 @@
   var currentXp = 0, currentAch = {}, selectedDay = null;
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  function chapterUrl(ch) { return GUIDE + "#ch" + ch; }
 
   function firstIncompleteDay() {
     for (var i = 0; i < DAYS.length; i++) if (!dayComplete(DAYS[i])) return DAYS[i];
@@ -641,7 +649,7 @@
       document.getElementById("next-eyebrow").textContent = "Kitchen closed";
       document.getElementById("next-what").textContent = "Every ticket is served. Dumpling Kitchen is open.";
       document.getElementById("next-where").textContent = "Pick a 'where next' feature from chapter 18 and start a new campaign.";
-      done.hidden = true; skip.hidden = true; open.href = chapterUrl(18);
+      done.hidden = true; skip.hidden = true; open.setAttribute("data-open-ch", "18");
       parkedNote.hidden = true;
       return;
     }
@@ -656,7 +664,7 @@
     done.setAttribute("data-step", s.id);
     skip.setAttribute("data-step", s.id);
     skip.disabled = !!state.parked[s.id];
-    open.href = chapterUrl(q.ch);
+    open.setAttribute("data-open-ch", String(q.ch));
     parkedNote.hidden = n.parkedCount === 0;
     parkedNote.textContent = n.parkedCount ? n.parkedCount + " parked step" + (n.parkedCount > 1 ? "s" : "") + " waiting in this service. They'll come back once the rest is done." : "";
   }
@@ -693,7 +701,7 @@
       '<p class="day-blurb">' + esc(d.blurb) + '</p>';
     d.quests.forEach(function (q) {
       html += '<div class="quest' + (questComplete(q) ? ' complete' : '') + '"><div class="quest-head"><h4><span class="ch">Ch ' + q.ch + '</span>' + esc(q.title) + '</h4>' +
-        '<span class="meta"><span>~' + q.hours + ' h · +' + XP.quest + ' XP</span><a href="' + chapterUrl(q.ch) + '" target="_blank" rel="noopener">Open chapter</a></span></div><ul class="steps">';
+        '<span class="meta"><span>~' + q.hours + ' h · +' + XP.quest + ' XP</span><button type="button" class="linkish" data-open-ch="' + q.ch + '">Open chapter</button></span></div><ul class="steps">';
       var ids = q.stepIds.slice(); if (q.bossId) ids.push(q.bossId);
       ids.forEach(function (id) {
         var s = STEP_BY_ID[id], checked = isDone(id);
@@ -967,6 +975,51 @@
     state.workdays = keep.workdays; state.rewards = keep.rewards;
     fillInputs();
     commit({ silentXp: true, extra: "Progress reset." });
+  });
+
+  // ------------------------------------------------------------------
+  // Reader: the build guide in a panel, loaded on first use
+  // ------------------------------------------------------------------
+  var reader = document.getElementById("reader");
+  var frame = document.getElementById("reader-frame");
+  var frameReady = false, pendingChapter = null, lastFocus = null;
+
+  frame.addEventListener("load", function () {
+    if (!frame.srcdoc) return;
+    frameReady = true;
+    if (pendingChapter) { goToChapter(pendingChapter); pendingChapter = null; }
+  });
+
+  function goToChapter(ch) {
+    try { frame.contentWindow.postMessage({ goto: "ch" + ch }, "*"); } catch (e) { /* frame not ready */ }
+  }
+
+  function openChapter(ch) {
+    lastFocus = document.activeElement;
+    reader.hidden = false;
+    document.body.style.overflow = "hidden";
+    document.getElementById("reader-title").textContent = "Build guide · Chapter " + ch;
+    if (!frame.srcdoc) { pendingChapter = ch; frame.srcdoc = GUIDE_HTML; }
+    else if (!frameReady) pendingChapter = ch;
+    else goToChapter(ch);
+    document.getElementById("reader-close").focus();
+  }
+
+  function closeReader() {
+    if (reader.hidden) return;
+    reader.hidden = true;
+    document.body.style.overflow = "";
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-open-ch]");
+    if (btn) openChapter(+btn.getAttribute("data-open-ch"));
+  });
+  document.getElementById("reader-close").addEventListener("click", closeReader);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeReader(); });
+  window.addEventListener("message", function (e) {
+    if (e.source === frame.contentWindow && e.data && e.data.closeReader) closeReader();
   });
 
   // ------------------------------------------------------------------
