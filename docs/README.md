@@ -15,6 +15,7 @@ Notes on the 2022 VR dumpling project and a plan for rebuilding it in current Un
 | [`01-repo-assessment.md`](01-repo-assessment.md) | What's in Big-Project and NewVRDumpling, what worked, what's broken, what to salvage |
 | [`02-upgrade-or-rebuild.md`](02-upgrade-or-rebuild.md) | Why rebuilding beats upgrading, current versions, how to bring the old art across |
 | [`03-original-design-and-code-review.md`](03-original-design-and-code-review.md) | The original gameplay found in the old projects (fuse heist, kitchen interactables, chef ideas) and a review of how well the old code was built |
+| [`04-local-archive-prompt.md`](04-local-archive-prompt.md) | A ready-to-paste prompt for a Claude Code session on your own computer, to mine your local repos, documents and chat exports for the original design |
 | [`DECISIONS-TO-REVIEW.md`](DECISIONS-TO-REVIEW.md) | Every call I made without asking you (D1–D29), with alternatives |
 | [`tutorial/dumpling-kitchen-tutorial.html`](tutorial/dumpling-kitchen-tutorial.html) | The tutorial (18 chapters + appendices) |
 | [`tutorial/dumpling-kitchen-quest.html`](tutorial/dumpling-kitchen-quest.html) | The same guide as a game: 9 services of 5 hours, XP and chef ranks, boss fights, focus sprints, achievements, deadline countdown |
