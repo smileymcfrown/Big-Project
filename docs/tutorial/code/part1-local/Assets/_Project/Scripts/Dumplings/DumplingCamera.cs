@@ -12,7 +12,7 @@ namespace DumplingKitchen.Dumplings
     {
         [SerializeField] private Transform target;
         [SerializeField] private Vector3 pivotOffset = new(0f, 0.5f, 0f);
-        [SerializeField, Min(0.5f)] private float distance = 3f;
+        [SerializeField, Min(0.05f)] private float distance = 3f;
         [SerializeField] private Vector2 pitchLimits = new(-10f, 60f);
 
         [Header("Sensitivity")]

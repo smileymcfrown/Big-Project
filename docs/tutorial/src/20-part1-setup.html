@@ -19,7 +19,7 @@
 
 <p>I went through both repos before writing this (the full write-up is in <span class="path">docs/01-repo-assessment.md</span>). Two findings matter here:</p>
 <ul>
-  <li>Your 4-player local co-op VR/PC build isn't in either repo I could see. Big-Project has the lobby code but never had a VR player. Part 1 of this guide rebuilds that local co-op setup from scratch.</li>
+  <li>Your 4-player local co-op VR/PC build lives on Big-Project's <code>DevelopXR</code> branch (Aug 2022, XR Interaction Toolkit 2 + Oculus XR plugin, no paid template). Part 1 of this guide rebuilds that same setup on current tools; <span class="path">docs/05-archive-findings.md</span> describes how the original worked.</li>
   <li>Both depend on SDKs that have been replaced, so <strong>rebuilding is less work than upgrading</strong> (<span class="path">docs/02-upgrade-or-rebuild.md</span> has the reasoning). We keep the art and the ideas.</li>
 </ul>
 <div class="note review"><span class="tag">Review D1, D2</span><p>Rebuild rather than upgrade, on <strong>Unity 6.3 LTS + NGO 2.13</strong>. NGO 3.0 shipped in September 2026 but needs Unity 6.7, which is still in beta. When 6.7 becomes the LTS you can upgrade both; nothing in this guide's code depends on what changed.</p></div>

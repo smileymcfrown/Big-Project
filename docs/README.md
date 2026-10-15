@@ -17,6 +17,7 @@ Notes on the 2022 VR dumpling project and a plan for rebuilding it in current Un
 | [`03-original-design-and-code-review.md`](03-original-design-and-code-review.md) | The original gameplay found in the old projects (fuse heist, kitchen interactables, chef ideas) and a review of how well the old code was built |
 | [`04-local-archive-prompt.md`](04-local-archive-prompt.md) | A ready-to-paste prompt for a Claude Code session on your own computer, to mine your local repos, documents and chat exports for the original design |
 | [`05-archive-findings.md`](05-archive-findings.md) | Everything found about the original design in the local archive (repos, Discord exports, notes): rules, chef and dumpling gameplay, the working local co-op setup on `DevelopXR`, production history, and which rebuild decisions to change |
+| [`06-bringing-in-original-ideas.md`](06-bringing-in-original-ideas.md) | Check that the tutorial's design can take the original ideas (it can), where each one plugs in, and a suggested order |
 | [`DECISIONS-TO-REVIEW.md`](DECISIONS-TO-REVIEW.md) | Every call I made without asking you (D1–D29), with alternatives |
 | [`tutorial/dumpling-kitchen-tutorial.html`](tutorial/dumpling-kitchen-tutorial.html) | The tutorial (18 chapters + appendices) |
 | [`tutorial/dumpling-kitchen-quest.html`](tutorial/dumpling-kitchen-quest.html) | The same guide as a game: 9 services of 5 hours, XP and chef ranks, boss fights, focus sprints, achievements, deadline countdown |

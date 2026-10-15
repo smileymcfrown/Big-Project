@@ -1,5 +1,7 @@
 # Decisions to review
 
+> **Your review so far (16 Oct 2026):** keep **D7** (5-minute rounds; the original was 3) and **D9** (service bell). The archive findings ([`05`](05-archive-findings.md)) compare every decision with the original game, and [`06`](06-bringing-in-original-ideas.md) shows where each original idea plugs into the tutorial's code. Plan: build the tutorial as written, then bring original ideas in.
+
 You asked me to work without stopping for input and to note the calls I made. Each one is a sensible default, not a rule. The tutorial marks the place each decision bites with a **"Review D#"** box.
 
 Your answers to my three opening questions are treated as fixed: **local couch first, then networked**; **Quest 2 via Air Link and via SteamVR**; **Netcode for GameObjects**.

@@ -1,5 +1,7 @@
 # 1. What's in the two old repos
 
+> **Correction (16 Oct 2026):** this review only looked at Big-Project's `Master` branch. Its **`DevelopXR`** branch holds the working VR chef + 4 split-screen dumplings build (best snapshot `92aed0f3`, Aug 2022), with no paid template or Photon. See [`05-archive-findings.md`](05-archive-findings.md). The tables below describe `Master` only.
+
 Surveyed on 2026-10-09. Both projects were made in **Unity 2021.3.1f1** between April and July 2022.
 
 | | **Big-Project** (this repo) | **NewVRDumpling** |
@@ -8,7 +10,7 @@ Surveyed on 2026-10-09. Both projects were made in **Unity 2021.3.1f1** between 
 | People (commit authors) | Lara Bannerman, Kieran, SaoirseChar (art) | Lala-banners (Lara), Kieran, smileymcfrown |
 | Networking | **Mirror 32.1.4** (copied into `Assets/Mirror`) | Third-party networking (not carried forward) |
 | VR | SteamVR Unity Plugin + OpenVR XR plugin 1.1.4, imported but **not used in any of our scenes** | Oculus Integration (~700 MB), OpenXR 1.3.1, Oculus XR 3.0.2, SteamVR plugin, plus third-party VR packages |
-| Asymmetric VR + PC working? | **No.** No VR rig in any project scene | Lara's networked experiments ("It works! VR and non VR player in same scene", 15 Jul). Not your local co-op version |
+| Asymmetric VR + PC working? | **Not on `Master`.** Yes on the `DevelopXR` branch (see the correction above) | Lara's networked experiments ("It works! VR and non VR player in same scene", 15 Jul). Not your local co-op version |
 | Our own scripts | ~13 (lobby, spawning, movement, camera, wrist UI) | ~8 of ours, plus Kieran's Modular Character Controller (~25 scripts) |
 | Art | 32 FBX props in `Assets/Models` | 44 FBX in `Assets/Kitchen Models` (**a superset**: adds the kitchen shell, pipes, wok, stockpot, steamer, Gina's veg), `Model/Dumpling.fbx`, `Kitchen_Populated.prefab` |
 
@@ -16,7 +18,7 @@ Surveyed on 2026-10-09. Both projects were made in **Unity 2021.3.1f1** between 
 
 **Neither of these two holds your version.** You got asymmetric VR/PC **4-player local co-op** working yourself, without a paid template, and that work isn't in Big-Project or NewVRDumpling, so it must be in another repo.
 
-- **Big-Project** went furthest on *structured* development (a host/join lobby with ready-up, spawn points, a custom NetworkManager, art pipeline, naming conventions), but it never had a VR player.
+- **Big-Project** went furthest on *structured* development (a host/join lobby with ready-up, spawn points, a custom NetworkManager, art pipeline, naming conventions), but its `Master` branch never had a VR player. (The `DevelopXR` branch did: see the correction above.)
 - The asymmetric commits in **NewVRDumpling** ("It works! VR and non VR player in same scene", 15 Jul) are Lala-banners' (Lara's) networked experiments, built on third-party packages that the rebuild doesn't use.
 
 It doesn't change the recommendation: everything gets rebuilt, and the new tutorial's Part 1 is exactly a local co-op asymmetric build.

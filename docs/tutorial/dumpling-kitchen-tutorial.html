@@ -297,7 +297,7 @@ footer.end { border-top: 2px solid var(--ink); padding-top: 1.5rem; color: var(-
 
 <p>I went through both repos before writing this (the full write-up is in <span class="path">docs/01-repo-assessment.md</span>). Two findings matter here:</p>
 <ul>
-  <li>Your 4-player local co-op VR/PC build isn't in either repo I could see. Big-Project has the lobby code but never had a VR player. Part 1 of this guide rebuilds that local co-op setup from scratch.</li>
+  <li>Your 4-player local co-op VR/PC build lives on Big-Project's <code>DevelopXR</code> branch (Aug 2022, XR Interaction Toolkit 2 + Oculus XR plugin, no paid template). Part 1 of this guide rebuilds that same setup on current tools; <span class="path">docs/05-archive-findings.md</span> describes how the original worked.</li>
   <li>Both depend on SDKs that have been replaced, so <strong>rebuilding is less work than upgrading</strong> (<span class="path">docs/02-upgrade-or-rebuild.md</span> has the reasoning). We keep the art and the ideas.</li>
 </ul>
 <div class="note review"><span class="tag">Review D1, D2</span><p>Rebuild rather than upgrade, on <strong>Unity 6.3 LTS + NGO 2.13</strong>. NGO 3.0 shipped in September 2026 but needs Unity 6.7, which is still in beta. When 6.7 becomes the LTS you can upgrade both; nothing in this guide's code depends on what changed.</p></div>
@@ -2006,7 +2006,7 @@ namespace DumplingKitchen.Dumplings
     {
         [SerializeField] private Transform target;
         [SerializeField] private Vector3 pivotOffset = new(0f, 0.5f, 0f);
-        [SerializeField, Min(0.5f)] private float distance = 3f;
+        [SerializeField, Min(0.05f)] private float distance = 3f;
         [SerializeField] private Vector2 pitchLimits = new(-10f, 60f);
 
         [Header(&quot;Sensitivity&quot;)]
@@ -2118,6 +2118,14 @@ namespace DumplingKitchen.Dumplings
   <li>Create a <strong>Physics Material</strong> (Unity 6 calls it <code>PhysicsMaterial</code>) with 0 friction and Friction Combine = Minimum, and put it on the SphereCollider so dumplings don't stick to walls.</li>
   <li>Drag one Dumpling into the scene and press Play. WASD/mouse or a gamepad should move it around. Delete it from the scene afterwards; Chapter 11 spawns them.</li>
 </ol>
+<div class="note gotcha"><span class="tag">Gotcha · tiny dumplings need tiny numbers</span><p>The defaults above suit a dumpling roughly 1 m tall, which is handy for a first test. The original design had <strong>5 cm dumplings</strong> in a 1.5 × 2 m kitchen. At that size, 4 m/s is 80 body-lengths a second and they tunnel straight through walls (the original team hit exactly this). When you swap in the real dumpling model, scale every distance down together. A starting point for a 5 cm dumpling:</p>
+<ul>
+<li><strong>Collider:</strong> SphereCollider radius 0.025; Rigidbody Collision Detection: Continuous Dynamic.</li>
+<li><strong>DumplingMotor:</strong> Move Speed 0.6–0.8, Acceleration 6, Jump Velocity about 2.4 (about a 30 cm hop), Ground Check Radius 0.02, Offset (0, 0.015, 0).</li>
+<li><strong>DumplingCamera:</strong> Distance 0.35, Pivot Offset (0, 0.05, 0), Collision Radius 0.01, and the Camera's Near clip plane 0.01.</li>
+<li><strong>DumplingInteractor:</strong> Reach 0.15.</li>
+<li><strong>Project Settings &gt; Physics:</strong> Default Contact Offset 0.002 (the default 0.01 is a fifth of the dumpling).</li>
+</ul></div>
 <div class="note gotcha"><span class="tag">Gotcha · one AudioListener</span><p>Unity wants exactly one <code>AudioListener</code>. In Part 1 it's on the chef's XR camera. Remove it from the dumpling camera or the console fills with warnings when the second dumpling joins.</p></div>
 <div class="note thennow"><span class="tag">Then → now</span><p>The Week 1 prototype already had a <code>Player Low Friction.physicMaterial</code>. Same idea; the type is now called <code>PhysicsMaterial</code>, and <code>Rigidbody.velocity</code> is now <code>linearVelocity</code>.</p></div>
 </section>
